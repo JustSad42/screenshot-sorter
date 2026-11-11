@@ -1,0 +1,545 @@
+{
+  "_help": "Each category lists keywords (case-insensitive regular expressions). A plain string counts 1 point; {\"k\": pattern, \"w\": weight} counts its weight. A screenshot goes to the category with the most points, if it reaches min_score. Ties go to the category listed first. Edit here or in the app's Categories tab.",
+  "fallback": "Other",
+  "no_text": "No Text",
+  "min_text_chars": 15,
+  "categories": [
+    {
+      "name": "League - Stats & Builds",
+      "keywords": [
+        {
+          "k": "solo/?duo",
+          "w": 3
+        },
+        {
+          "k": "ranked solo",
+          "w": 3
+        },
+        {
+          "k": "\\bKDA\\b",
+          "w": 3
+        },
+        {
+          "k": "CS/m",
+          "w": 3
+        },
+        {
+          "k": "CS/rn",
+          "w": 3
+        },
+        {
+          "k": "\\bLP\\b",
+          "w": 2
+        },
+        "win ?rate",
+        "victory",
+        "defeat",
+        {
+          "k": "\\bKP\\b",
+          "w": 3
+        },
+        "grandmaster",
+        "challenger",
+        "\\bmaster\\b",
+        "diamond",
+        "emerald",
+        "platinum",
+        "\\bpeak\\b",
+        {
+          "k": "op score",
+          "w": 3
+        },
+        {
+          "k": "runes",
+          "w": 2
+        },
+        {
+          "k": "item builds",
+          "w": 3
+        },
+        {
+          "k": "skill order",
+          "w": 3
+        },
+        "\\d+W ?- ?\\d+L",
+        "\\d+W \\d+L",
+        {
+          "k": "(good|bad|avg|great) team",
+          "w": 3
+        },
+        "blue side",
+        "red side",
+        "\\bMVP\\b",
+        "\\bACE\\b",
+        {
+          "k": "copy match link",
+          "w": 3
+        },
+        "\\d+[hd] ?ago",
+        "laning",
+        {
+          "k": "p/kill",
+          "w": 3
+        },
+        "\\bflex\\b",
+        "unranked",
+        "champion",
+        "summoner",
+        "matchup",
+        {
+          "k": "arena",
+          "w": 0.5
+        },
+        "fate (godlike|solid)",
+        "keystone",
+        "conqueror",
+        "hail of blades",
+        "press the attack",
+        "grasp of the undying",
+        "\\bfiora\\b",
+        {
+          "k": "patch",
+          "w": 0.5
+        },
+        "\\bcut-?off\\b",
+        "\\bDMG\\b",
+        "vision/m",
+        {
+          "k": "op\\.gg",
+          "w": 3
+        },
+        "vision score",
+        "ready check",
+        "auto ?accept",
+        "lobby",
+        "\\d+ games",
+        {
+          "k": "\\bwins\\b",
+          "w": 0.5
+        },
+        {
+          "k": "\\blosses\\b",
+          "w": 0.5
+        },
+        "league of legends",
+        "\\bEUW\\b",
+        "\\bNA\\b server",
+        "sorcery|precision|domination|resolve|inspiration",
+        "\\d+(\\.\\d)?/\\d+(\\.\\d)?/\\d+(\\.\\d)?",
+        "\\bWR\\b",
+        "\\b(jungle|support|top lane|mid lane|adc)\\b",
+        {
+          "k": "season",
+          "w": 0.5
+        }
+      ],
+      "min_score": 2
+    },
+    {
+      "name": "League - In-Game",
+      "keywords": [
+        {
+          "k": "\\[all\\]",
+          "w": 3
+        },
+        {
+          "k": "\\[team\\]",
+          "w": 3
+        },
+        {
+          "k": "is on the way",
+          "w": 3
+        },
+        "nexus",
+        {
+          "k": "total bonus damage",
+          "w": 3
+        },
+        "turret",
+        "dragon",
+        "baron",
+        "atakhan",
+        "\\bgold\\b",
+        {
+          "k": "has been slain",
+          "w": 3
+        },
+        "surrender",
+        "in queue",
+        "accept!",
+        {
+          "k": "champ select",
+          "w": 3
+        }
+      ],
+      "min_score": 1
+    },
+    {
+      "name": "YouTube - Studio & Analytics",
+      "keywords": [
+        {
+          "k": "views",
+          "w": 0.5
+        },
+        {
+          "k": "watch time",
+          "w": 3
+        },
+        {
+          "k": "impressions",
+          "w": 3
+        },
+        {
+          "k": "click-through",
+          "w": 3
+        },
+        {
+          "k": "average view duration",
+          "w": 3
+        },
+        {
+          "k": "average percentage viewed",
+          "w": 3
+        },
+        "retention",
+        "subscribers",
+        {
+          "k": "more than usual",
+          "w": 3
+        },
+        {
+          "k": "top recent videos",
+          "w": 3
+        },
+        {
+          "k": "typical",
+          "w": 0.5
+        },
+        {
+          "k": "content detection",
+          "w": 3
+        },
+        "copyright",
+        "thumbnail",
+        "analytics",
+        "audience",
+        "revenue",
+        "\\bspike\\b",
+        "dips",
+        "first \\d+ hours?",
+        "realtime",
+        {
+          "k": "youtube studio",
+          "w": 3
+        },
+        {
+          "k": "upload",
+          "w": 0.5
+        }
+      ],
+      "min_score": 2
+    },
+    {
+      "name": "YouTube & Twitch - Comments & Streams",
+      "keywords": [
+        "\\breply\\b",
+        {
+          "k": "replying to",
+          "w": 3
+        },
+        {
+          "k": "@\\w{3,}",
+          "w": 0.5
+        },
+        "minutes? ago",
+        "\\d+ (hours?|days?|weeks?|months?|years?) ago",
+        {
+          "k": "twitch",
+          "w": 0.5
+        },
+        {
+          "k": "youtube",
+          "w": 0.5
+        },
+        {
+          "k": "stream",
+          "w": 0.5
+        },
+        {
+          "k": "followers",
+          "w": 0.5
+        },
+        "subscribe",
+        {
+          "k": "watching",
+          "w": 0.5
+        },
+        "clips?\\b",
+        {
+          "k": "live\\b",
+          "w": 0.5
+        },
+        "\\bVOD\\b",
+        "\\d{1,2}:\\d{2} [\\w]+: ",
+        {
+          "k": "commented:",
+          "w": 3
+        },
+        {
+          "k": "highlighted comment",
+          "w": 3
+        },
+        {
+          "k": "notifications?",
+          "w": 0.5
+        },
+        {
+          "k": "\\b\\w{3,}: \\w",
+          "w": 0.5
+        },
+        {
+          "k": "streamelements",
+          "w": 3
+        },
+        {
+          "k": "nightbot",
+          "w": 3
+        },
+        {
+          "k": "\\d+K\\b views|\\d+(\\.\\d)?K\\b",
+          "w": 0.5
+        },
+        {
+          "k": "\\bchat\\b",
+          "w": 0.5
+        }
+      ],
+      "min_score": 1
+    },
+    {
+      "name": "Discord & Chats",
+      "keywords": [
+        {
+          "k": "yesterday at",
+          "w": 3
+        },
+        {
+          "k": "today at",
+          "w": 3
+        },
+        "[A-Za-z]{3,} \\d{1,2}:\\d{2} [A-Z][a-z]",
+        "\\blmao\\b",
+        {
+          "k": "\\bbro\\b",
+          "w": 0.5
+        },
+        {
+          "k": "\\bwtf\\b",
+          "w": 0.5
+        },
+        {
+          "k": "\\blol\\b",
+          "w": 0.5
+        },
+        "\\b[A-Za-z][\\w']{2,} \\d{1,2}:\\d{2}\\b",
+        "\\d{2}/\\d{2}/\\d{4} ?\\d{1,2}:\\d{2}",
+        {
+          "k": "\\b(xd|imao|idk|ngl|fr|frfr)\\b",
+          "w": 0.5
+        },
+        {
+          "k": "mutual (friends?|servers?)",
+          "w": 3
+        },
+        "add friend",
+        {
+          "k": "\\bGIF\\b",
+          "w": 0.5
+        }
+      ],
+      "min_score": 1
+    },
+    {
+      "name": "Code & Terminal",
+      "keywords": [
+        {
+          "k": "PS C:",
+          "w": 3
+        },
+        "C:\\\\",
+        {
+          "k": "docker",
+          "w": 3
+        },
+        "\\bWSL\\b",
+        "\\bnpm\\b",
+        "\\bgit\\b",
+        "python",
+        "\\bpip\\b",
+        "localhost",
+        {
+          "k": "netstat",
+          "w": 3
+        },
+        {
+          "k": "\\berror\\b",
+          "w": 0.5
+        },
+        {
+          "k": "command",
+          "w": 0.5
+        },
+        "\\.py\\b",
+        "\\.js\\b",
+        "\\bdef \\b",
+        {
+          "k": "function",
+          "w": 0.5
+        },
+        {
+          "k": "traceback",
+          "w": 3
+        },
+        "exception",
+        "sudo",
+        "\\$ "
+      ],
+      "min_score": 2
+    },
+    {
+      "name": "Network & PC",
+      "keywords": [
+        {
+          "k": "latency",
+          "w": 3
+        },
+        {
+          "k": "packet loss",
+          "w": 3
+        },
+        {
+          "k": "jitter",
+          "w": 3
+        },
+        "\\bping\\b",
+        {
+          "k": "\\bms\\b",
+          "w": 0.5
+        },
+        "router",
+        "gateway",
+        {
+          "k": "cloudflare",
+          "w": 3
+        },
+        "MB/?'?s",
+        {
+          "k": "connection",
+          "w": 0.5
+        },
+        "internet",
+        {
+          "k": "network",
+          "w": 0.5
+        },
+        "bandwidth",
+        "\\bCPU\\b",
+        "\\bGPU\\b",
+        "\\bRAM\\b",
+        "driver"
+      ],
+      "min_score": 2
+    },
+    {
+      "name": "Games & Steam",
+      "keywords": [
+        "steam",
+        {
+          "k": "community hub",
+          "w": 3
+        },
+        {
+          "k": "downloaded",
+          "w": 0.5
+        },
+        {
+          "k": "library",
+          "w": 0.5
+        },
+        "achievement",
+        {
+          "k": "add to cart",
+          "w": 3
+        },
+        {
+          "k": "wishlist",
+          "w": 3
+        },
+        {
+          "k": "early access",
+          "w": 3
+        },
+        {
+          "k": "\\bGB\\b",
+          "w": 0.5
+        },
+        "epic games",
+        "ubisoft",
+        {
+          "k": "all games",
+          "w": 3
+        },
+        "release date",
+        "installation",
+        "games\\b"
+      ],
+      "min_score": 2
+    },
+    {
+      "name": "Web & Shopping",
+      "keywords": [
+        "google",
+        "https?://",
+        "www\\.",
+        "\\.com\\b",
+        {
+          "k": "search",
+          "w": 0.5
+        },
+        {
+          "k": "images",
+          "w": 0.5
+        },
+        "\\$ ?\\d",
+        "price",
+        {
+          "k": "checkout",
+          "w": 3
+        },
+        {
+          "k": "order",
+          "w": 0.5
+        },
+        "spotify",
+        {
+          "k": "account",
+          "w": 0.5
+        },
+        "sign in",
+        "password",
+        {
+          "k": "email",
+          "w": 0.5
+        },
+        "\\br/\\w+",
+        "reddit",
+        "wiktionary|wikipedia",
+        {
+          "k": "people also ask",
+          "w": 3
+        }
+      ],
+      "min_score": 2
+    }
+  ]
+}

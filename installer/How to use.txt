@@ -1,0 +1,32 @@
+Screenshot Sorter
+=================
+Open it from the Start menu. It sorts the screenshots in a folder into category folders
+by the text inside them (read offline with Windows' own text recognition).
+
+SORT       Preview shows where new screenshots would go. Nothing moves until you press Sort now.
+           Drag a card onto a category chip (or right-click > Move to) to change it.
+           After moving, "Teach it" offers words so similar screenshots go there next time.
+           Click a card for a preview; double-click for full screen (arrow keys to flip).
+LIBRARY    Everything already sorted. Re-file anything by drag or right-click.
+           "Readable names" renames files like "2026-10-13 234220 Chat - Name.png" (undoable).
+SEARCH     The bar at the top searches the text inside every screenshot. Press / to jump to it.
+CATEGORIES Add, rename, reorder (drag) categories. Click a keyword's weight to make it a
+           stronger (3) or weaker (1/2) clue.
+CLEAN UP   Find duplicates (extras go to the Recycle Bin) and shrink screenshots to AVIF
+           (much smaller; originals kept in a backup folder) or lossless WebP.
+INSIGHTS   Counts by category and month. "Full report" adds League and YouTube Studio numbers.
+SETTINGS   Auto-sort: Instantly / Every few hours / Off, tray icon or hidden, start at login,
+           month folders, readable names, Arabic text, optional Claude for leftovers, theme,
+           and update checks.
+
+Auto-sort is off until you turn it on in Settings. It then runs in the background (tray icon
+near the clock, or hidden) and starts when you log in. Undo (in the app or the tray menu)
+reverses the last sort, move or rename.
+
+Updates: the app checks GitHub once a day and shows "Update available" when there is a new
+version. "Update now" downloads and installs it, then reopens the app. Your settings stay.
+
+Settings, categories and caches are kept in this folder (%LOCALAPPDATA%\Programs\Screenshot Sorter).
+
+Command line: --apply [--folder PATH], --undo, --search TEXT, --compress avif|webp,
+--check-update, --update, --version. Without --apply it's a dry run.

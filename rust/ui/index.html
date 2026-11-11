@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screenshot Sorter</title>
+<style>
+:root{
+  --bg:#f4f5f8;--panel:#ffffff;--panel-2:#f8f9fb;--sidebar:#eef0f5;--line:#e3e6ec;--line-2:#d5d9e2;
+  --text:#14161c;--text-2:#545a68;--text-3:#8a90a0;--accent:#5b5bd6;--accent-2:#4848c4;--accent-soft:#ececfd;
+  --good:#0ca30c;--danger:#d03b3b;--shadow:0 1px 2px rgba(16,24,40,.06),0 4px 16px rgba(16,24,40,.06);
+  --shadow-lg:0 12px 40px rgba(16,24,40,.18);--radius:12px;color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1115;--panel:#171a21;--panel-2:#1c2029;--sidebar:#12141a;--line:#262b36;--line-2:#323846;
+  --text:#eceef3;--text-2:#a5abb9;--text-3:#727a8c;--accent:#7c7cf0;--accent-2:#9393f5;--accent-soft:#25264a;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);--shadow-lg:0 16px 48px rgba(0,0,0,.5);color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
+  overflow:hidden;-webkit-font-smoothing:antialiased;user-select:none}
+button{font:inherit;color:inherit}
+input,select,textarea{font:inherit;color:inherit}
+svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.app{display:grid;grid-template-columns:232px 1fr;height:100vh}
+
+/* sidebar */
+.side{background:var(--sidebar);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:16px 12px;min-height:0;overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px;font-weight:650;font-size:15px}
+.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#6d6df2,#4f46e5);display:grid;place-items:center;
+  box-shadow:0 4px 14px rgba(79,70,229,.35)}
+.logo svg{width:17px;height:17px;stroke:#fff}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:11px;border:0;background:none;padding:9px 10px;border-radius:9px;cursor:pointer;
+  color:var(--text-2);font-weight:500;text-align:left;transition:background .15s,color .15s}
+.nav button:hover{background:var(--panel-2);color:var(--text)}
+.nav button.on{background:var(--panel);color:var(--text);box-shadow:var(--shadow)}
+.nav button.on svg{stroke:var(--accent)}
+.nav .count{margin-left:auto;font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.side .spacer{flex:1}
+.bgcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow)}
+.bgcard .row{display:flex;align-items:center;gap:8px}
+.bgcard .t{font-weight:600;font-size:13px}
+.bgcard .s{font-size:12px;color:var(--text-3);margin-top:4px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--text-3);flex:none}
+.dot.live{background:var(--good);box-shadow:0 0 0 0 rgba(12,163,12,.5);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(12,163,12,.45)}70%{box-shadow:0 0 0 7px rgba(12,163,12,0)}100%{box-shadow:0 0 0 0 rgba(12,163,12,0)}}
+
+/* main */
+.main{display:flex;flex-direction:column;min-width:0;position:relative}
+.top{display:flex;align-items:center;gap:10px;padding:14px 22px;border-bottom:1px solid var(--line);background:var(--bg)}
+.folder{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:7px 8px 7px 12px;min-width:0;max-width:44%;cursor:pointer;transition:border-color .15s}
+.folder:hover{border-color:var(--line-2)}
+.folder .path{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:rtl;text-align:left;color:var(--text-2)}
+.folder .path b{color:var(--text);font-weight:600}
+.search{flex:1;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0 12px;
+  transition:border-color .15s,box-shadow .15s}
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.search input{flex:1;border:0;background:none;outline:none;padding:9px 0}
+.kbd{font-size:11px;color:var(--text-3);border:1px solid var(--line);border-radius:5px;padding:0 5px}
+.iconbtn{border:1px solid var(--line);background:var(--panel);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;
+  color:var(--text-2);transition:all .15s}
+.iconbtn:hover{color:var(--text);border-color:var(--line-2)}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 14px;
+  cursor:pointer;font-weight:550;transition:all .15s;white-space:nowrap}
+.btn:hover{border-color:var(--line-2);transform:translateY(-1px)}
+.btn:active{transform:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(91,91,214,.3)}
+.updbar{display:none;align-items:center;gap:12px;margin:10px 22px 0;padding:10px 14px;border-radius:12px;background:var(--accent-soft);border:1px solid var(--accent);font-size:13px}
+.updbar.on{display:flex}.updbar .grow{flex:1}.updbar b{color:var(--accent)}
+.btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2)}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.5;pointer-events:none}
+.btn svg.i{width:16px;height:16px}
+.progress{position:absolute;left:0;right:0;top:0;height:3px;overflow:hidden;opacity:0;transition:opacity .2s;z-index:20}
+.progress.on{opacity:1}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#a78bfa);width:0;transition:width .25s}
+.progress.indet i{width:35%;animation:indet 1.1s infinite ease-in-out}
+@keyframes indet{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+
+.view{flex:1;overflow:auto;padding:20px 22px 90px;display:none}
+.view.on{display:block;animation:fade .2s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.vh{display:flex;align-items:flex-end;gap:12px;margin-bottom:14px}
+.vh h1{font-size:22px;margin:0;font-weight:650;letter-spacing:-.01em}
+.vh .sub{color:var(--text-3);font-size:13px;margin-top:2px}
+.vh .actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+/* chips */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:thin}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;
+  cursor:pointer;white-space:nowrap;font-weight:500;color:var(--text-2);transition:all .15s}
+.chip:hover{color:var(--text);border-color:var(--line-2)}
+.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.chip .n{font-size:12px;opacity:.7;font-variant-numeric:tabular-nums}
+.chip .sw{width:9px;height:9px;border-radius:3px}
+.chip.drop{outline:2px dashed var(--accent);outline-offset:2px;transform:scale(1.05)}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--card,210px),1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:pointer;position:relative;
+  transition:transform .15s,box-shadow .15s,border-color .15s;content-visibility:auto;contain-intrinsic-size:220px}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--line-2)}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.card .thumb{aspect-ratio:16/10;background:var(--panel-2);overflow:hidden;position:relative}
+.card img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .25s,transform .3s}
+.card img.ld{opacity:1}
+.card:hover img{transform:scale(1.03)}
+.card .meta{padding:8px 10px 10px}
+.card .name{font-size:12.5px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .why{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.card .tag{position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;color:#fff;
+  backdrop-filter:blur(6px);background:rgba(15,17,21,.62);display:flex;align-items:center;gap:6px}
+.card .tag i{width:7px;height:7px;border-radius:50%}
+.card .check{position:absolute;top:8px;left:8px;width:22px;height:22px;border-radius:7px;border:2px solid #fff;background:rgba(0,0,0,.25);
+  opacity:0;transition:opacity .15s;display:grid;place-items:center}
+.card:hover .check,.card.sel .check,.selecting .card .check{opacity:1}
+.card.sel .check{background:var(--accent);border-color:var(--accent)}
+.card.sel .check::after{content:"";width:9px;height:5px;border:2px solid #fff;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.card.ghost{opacity:.4}
+
+/* empty */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:70px 20px;color:var(--text-3)}
+.empty .art{width:74px;height:74px;border-radius:22px;background:var(--accent-soft);display:grid;place-items:center;margin-bottom:16px}
+.empty .art svg{width:34px;height:34px;stroke:var(--accent)}
+.empty h3{color:var(--text);margin:0 0 6px;font-size:17px}
+.empty p{margin:0 0 18px;max-width:420px}
+
+/* selection bar */
+.selbar{position:absolute;left:50%;bottom:22px;transform:translate(-50%,140%);background:var(--text);color:var(--bg);border-radius:14px;
+  padding:8px 8px 8px 16px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-lg);transition:transform .25s cubic-bezier(.2,.9,.3,1.2),visibility .25s;z-index:15;visibility:hidden}
+.selbar.on{transform:translate(-50%,0);visibility:visible}
+.selbar .btn{background:transparent;border-color:transparent;color:var(--bg)}
+.selbar .btn:hover{background:rgba(127,127,127,.2)}
+.selbar b{font-variant-numeric:tabular-nums}
+
+/* menu */
+.menu{position:fixed;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;min-width:230px;
+  z-index:50;max-height:70vh;overflow:auto;animation:pop .12s ease}
+@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.menu button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left}
+.menu button:hover{background:var(--panel-2)}
+.menu .sep{height:1px;background:var(--line);margin:5px 4px}
+.menu .lbl{font-size:11px;color:var(--text-3);padding:6px 10px 2px;text-transform:uppercase;letter-spacing:.06em}
+.menu .sw{width:10px;height:10px;border-radius:3px;flex:none}
+
+/* drawer */
+.drawer{position:absolute;top:0;right:0;bottom:0;width:400px;background:var(--panel);border-left:1px solid var(--line);box-shadow:var(--shadow-lg);
+  transform:translateX(105%);transition:transform .25s cubic-bezier(.2,.8,.2,1);z-index:12;display:flex;flex-direction:column}
+.drawer.on{transform:none}
+.drawer .hd{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.drawer .hd .ttl{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.drawer .bd{overflow:auto;padding:16px;flex:1}
+.drawer img{width:100%;border-radius:10px;border:1px solid var(--line);cursor:zoom-in;background:var(--panel-2)}
+.kv{display:grid;grid-template-columns:90px 1fr;gap:6px 10px;margin:14px 0;font-size:13px}
+.kv span:nth-child(odd){color:var(--text-3)}
+.ocr{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--text-2);
+  white-space:pre-wrap;max-height:240px;overflow:auto;user-select:text}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 9px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line);margin:0 6px 6px 0}
+
+/* lightbox */
+.lightbox{position:fixed;inset:0;background:rgba(8,9,12,.88);backdrop-filter:blur(8px);display:none;z-index:60;align-items:center;justify-content:center}
+.lightbox.on{display:flex;animation:fade .15s}
+.lightbox img{max-width:92vw;max-height:86vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.lightbox .cap{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#c9ccd6;font-size:13px}
+.lightbox .nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.12);
+  color:#fff;cursor:pointer;display:grid;place-items:center}
+.lightbox .nav:hover{background:rgba(255,255,255,.22)}
+.lightbox .prev{left:22px}.lightbox .next{right:22px}
+.lightbox .x{position:absolute;top:18px;right:18px}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(10,12,16,.45);backdrop-filter:blur(3px);display:none;z-index:70;align-items:center;justify-content:center}
+.modal-bg.on{display:flex;animation:fade .15s}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);width:min(480px,92vw);padding:22px;animation:pop .15s}
+.modal h3{margin:0 0 6px;font-size:17px}
+.modal p{margin:0 0 14px;color:var(--text-2)}
+.modal .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.modal input[type=text],.modal input[type=password]{width:100%;border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:9px 12px;outline:none}
+.modal input:focus{border-color:var(--accent)}
+.toggle-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;margin:0 6px 8px 0;cursor:pointer;
+  transition:all .15s;color:var(--text-2)}
+.toggle-chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+.toggle-chip.on::before{content:"✓";color:var(--accent);font-weight:700}
+
+/* toasts */
+.toasts{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:80}
+.toast{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:11px 14px;min-width:260px;max-width:380px;
+  display:flex;gap:10px;align-items:flex-start;animation:slidein .25s cubic-bezier(.2,.9,.3,1.2)}
+.toast .ti{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700}
+.toast.err .ti{background:#fde8e8;color:var(--danger)}
+.toast .tb{flex:1}
+.toast .tb small{display:block;color:var(--text-3)}
+.toast .ta{border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer;padding:0 0 0 6px}
+@keyframes slidein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.status{position:absolute;left:22px;bottom:14px;font-size:12px;color:var(--text-3);pointer-events:none}
+
+/* cards & forms */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+.box h2{font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+.box h2 svg{stroke:var(--accent)}
+.box .desc{color:var(--text-3);font-size:13px;margin:0 0 14px}
+.setting{display:flex;align-items:center;gap:14px;padding:11px 0;border-top:1px solid var(--line)}
+.setting:first-of-type{border-top:0}
+.setting .lab{flex:1}
+.setting .lab small{display:block;color:var(--text-3);font-size:12.5px}
+.switch{position:relative;width:40px;height:23px;flex:none}
+.switch input{display:none}
+.switch span{position:absolute;inset:0;background:var(--line-2);border-radius:999px;transition:background .2s;cursor:pointer}
+.switch span::after{content:"";position:absolute;width:17px;height:17px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s cubic-bezier(.3,1.4,.5,1);
+  box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch input:checked+span{background:var(--accent)}
+.switch input:checked+span::after{transform:translateX(17px)}
+.seg{display:inline-flex;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:none;padding:6px 12px;border-radius:7px;cursor:pointer;color:var(--text-2);font-weight:550}
+.seg button.on{background:var(--panel);color:var(--text);box-shadow:var(--shadow)}
+input[type=range]{accent-color:var(--accent);width:160px}
+.field{border:1px solid var(--line);background:var(--panel-2);border-radius:9px;padding:8px 11px;outline:none;min-width:0}
+.field:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* categories editor */
+.cat-wrap{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}
+.cat-list{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:var(--shadow)}
+.cat-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;transition:background .15s}
+.cat-item:hover{background:var(--panel-2)}
+.cat-item.on{background:var(--accent-soft)}
+.cat-item .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.cat-item .nm{flex:1;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-item .k{font-size:12px;color:var(--text-3)}
+.cat-item.dragover{box-shadow:inset 0 2px 0 var(--accent)}
+.kws{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.kw{display:inline-flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:9px;background:var(--panel-2);overflow:hidden;font-size:13px}
+.kw code{padding:5px 9px;font-family:"Cascadia Code",Consolas,monospace;font-size:12px;user-select:text}
+.kw .w{border:0;border-left:1px solid var(--line);background:none;padding:5px 8px;cursor:pointer;font-weight:650;font-size:12px;min-width:34px}
+.kw .w.w3{color:#fff;background:var(--accent)}
+.kw .w.w2{color:var(--accent);background:var(--accent-soft)}
+.kw .w.w05{color:var(--text-3)}
+.kw .x{border:0;border-left:1px solid var(--line);background:none;padding:5px 8px;cursor:pointer;color:var(--text-3)}
+.kw .x:hover{color:var(--danger)}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.stepper button{border:0;background:var(--panel-2);width:30px;height:32px;cursor:pointer;font-size:16px}
+.stepper span{min-width:42px;text-align:center;font-weight:650;font-variant-numeric:tabular-nums}
+
+/* insights */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:16px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.tile .big{font-size:28px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile .lbl{color:var(--text-3);font-size:13px}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar{display:grid;grid-template-columns:220px 1fr 50px;align-items:center;gap:10px;font-size:13px}
+.bar .track{height:10px;background:var(--panel-2);border-radius:999px;overflow:hidden}
+.bar .fill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.bar .v{text-align:right;color:var(--text-2);font-variant-numeric:tabular-nums}
+.cols{display:flex;align-items:flex-end;gap:8px;height:170px;padding-top:10px}
+.cols .c{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.cols .c i{width:100%;max-width:46px;background:var(--accent);border-radius:6px 6px 2px 2px;transition:height .6s cubic-bezier(.2,.8,.2,1);position:relative}
+.cols .c i:hover{filter:brightness(1.15)}
+.cols .c small{font-size:11px;color:var(--text-3)}
+.dupgroup{display:flex;gap:10px;overflow-x:auto;padding:10px 0;border-top:1px solid var(--line)}
+.dupgroup .card{width:180px;flex:none}
+.keep{position:absolute;top:8px;right:8px;font-size:11px;font-weight:650;background:var(--good);color:#fff;border-radius:999px;padding:2px 8px}
+.extra{position:absolute;top:8px;right:8px;font-size:11px;font-weight:650;background:rgba(15,17,21,.65);color:#fff;border-radius:999px;padding:2px 8px}
+.meter{height:10px;border-radius:999px;background:var(--panel-2);overflow:hidden;margin:10px 0 6px}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,#1baf7a,#5b5bd6)}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:999px;border:3px solid transparent;background-clip:content-box}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo"><svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 12h8M8 15h5"/></svg></div>Screenshot Sorter</div>
+    <nav class="nav" id="nav"></nav>
+    <div class="spacer"></div>
+    <div class="bgcard" id="bgcard"></div>
+  </aside>
+  <main class="main">
+    <div class="progress" id="progress"><i></i></div>
+    <header class="top">
+      <div class="folder" id="folderBtn" title="Change folder">
+        <svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <span class="path" id="folderPath"></span>
+        <button class="btn" style="padding:5px 10px" id="openFolder" title="Open in File Explorer"><svg class="i" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>
+      </div>
+      <label class="search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" placeholder="Search the text inside every screenshot…"><span class="kbd">/</span></label>
+      <button class="iconbtn" id="themeBtn" title="Switch theme"></button>
+    </header>
+
+    <div class="updbar" id="updbar"></div>
+    <section class="view" id="v-sort"></section>
+    <section class="view" id="v-library"></section>
+    <section class="view" id="v-categories"></section>
+    <section class="view" id="v-cleanup"></section>
+    <section class="view" id="v-insights"></section>
+    <section class="view" id="v-settings"></section>
+
+    <div class="selbar" id="selbar"></div>
+    <aside class="drawer" id="drawer"></aside>
+    <div class="status" id="status"></div>
+  </main>
+</div>
+<div class="lightbox" id="lightbox"></div>
+<div class="modal-bg" id="modal"></div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+const AUTO = window.__AUTO;  // set by the app when opened from the Explorer menu
+const $ = (s, el=document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const img = (p, s=420) => `http://thumb.localhost/?s=${s}&p=${encodeURIComponent(p)}`;
+const ICONS = {
+  sort:'<path d="M3 6h18M6 12h12M10 18h4"/>',
+  library:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  categories:'<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  cleanup:'<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>',
+  insights:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  play:'<path d="M5 12h14M13 6l6 6-6 6"/>', undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  move:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="m12 11 3 3-3 3M9 14h6"/>',
+  open:'<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>', left:'<path d="m15 18-6-6 6-6"/>', right:'<path d="m9 18 6-6-6-6"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', sparkle:'<path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/>',
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+  download:'<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+  zip:'<path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/>', bolt:'<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
+  rename:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/>', report:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 17v-3M12 17v-6M16 17v-4"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', robot:'<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/>'
+};
+const icon = (n, cls='i') => `<svg class="${cls}" viewBox="0 0 24 24">${ICONS[n]||''}</svg>`;
+const api = (method, ...args) => window.__TAURI__.core.invoke('call', {method, args});
+
+const S = { view:'sort', items:[], mode:'plan', filter:'All', sel:new Set(), last:null, rules:null, colors:{}, settings:{}, bg:{},
+            folder:'', busy:false, cardSize:210, drawerItem:null, lbIndex:-1, editCat:null, dups:[] };
+const NAV = [['sort','Sort'],['library','Library'],['categories','Categories'],['cleanup','Clean up'],['insights','Insights'],['settings','Settings']];
+const V = () => document.getElementById(S.view === 'library' ? 'v-library' : 'v-sort');  // the grid view being shown
+const color = c => S.colors[c] || (c==='Unsorted' ? '#9aa1b2' : '#8a90a0');
+
+/* ---------- plumbing ---------- */
+function toast(msg, sub='', opts={}){
+  const el = document.createElement('div'); el.className = 'toast' + (opts.err ? ' err' : '');
+  el.innerHTML = `<div class="ti">${opts.err ? '!' : '✓'}</div><div class="tb">${esc(msg)}${sub ? `<small>${esc(sub)}</small>` : ''}</div>` +
+    (opts.action ? `<button class="ta">${esc(opts.action)}</button>` : '');
+  if (opts.action) el.querySelector('.ta').onclick = () => { opts.onAction(); el.remove(); };
+  $('#toasts').appendChild(el); setTimeout(() => el.remove(), opts.ms || 5000);
+}
+function setStatus(t){ $('#status').textContent = t || ''; }
+function progress(on, d=0, t=0){
+  const p = $('#progress'); p.classList.toggle('on', on);
+  p.classList.toggle('indet', on && !t); $('i', p).style.width = t ? (100 * d / t) + '%' : '';
+}
+async function job(kind, args={}, label='Working…'){
+  if (S.busy) { toast('Still busy with the last task', '', {err:true}); throw new Error('busy'); }
+  S.busy = true; document.querySelectorAll('[data-busy]').forEach(b => b.disabled = true);
+  progress(true); setStatus(label);
+  try {
+    const id = await api('start_job', kind, args);
+    while (true) {
+      await new Promise(r => setTimeout(r, 180));
+      const j = await api('job', id);
+      if (!j) continue;
+      const [d, t] = j.progress; progress(true, d, t);
+      setStatus(t ? `${j.message && !j.message.startsWith('Reading') ? j.message : label} ${d}/${t}` : (j.message || label));
+      if (j.done) {
+        if (j.error) throw new Error(j.error);
+        return j.has_result ? j.result : null;
+      }
+    }
+  } catch (e) { if (e.message !== 'busy') toast('Something went wrong', e.message, {err:true}); throw e; }
+  finally { S.busy = false; progress(false); setStatus(''); document.querySelectorAll('[data-busy]').forEach(b => b.disabled = false); }
+}
+function modal(html, setup){
+  const m = $('#modal'); m.innerHTML = `<div class="modal">${html}</div>`; m.classList.add('on');
+  const close = () => m.classList.remove('on');
+  m.onclick = e => { if (e.target === m) close(); };
+  setup && setup($('.modal', m), close); return close;
+}
+function confirmBox(title, text, okLabel='Continue', danger=false){
+  return new Promise(res => modal(`<h3>${esc(title)}</h3><p>${esc(text)}</p><div class="foot"><button class="btn" data-x>Cancel</button>
+    <button class="btn ${danger?'danger':'primary'}" data-ok>${esc(okLabel)}</button></div>`, (m, close) => {
+      $('[data-x]', m).onclick = () => { close(); res(false); }; $('[data-ok]', m).onclick = () => { close(); res(true); }; }));
+}
+function prompt2(title, text, value=''){
+  return new Promise(res => modal(`<h3>${esc(title)}</h3><p>${esc(text)}</p><input type="text" value="${esc(value)}">
+    <div class="foot"><button class="btn" data-x>Cancel</button><button class="btn primary" data-ok>OK</button></div>`, (m, close) => {
+      const i = $('input', m); setTimeout(() => { i.focus(); i.select(); }, 30);
+      const ok = () => { close(); res(i.value.trim() || null); };
+      i.onkeydown = e => { if (e.key === 'Enter') ok(); if (e.key === 'Escape') { close(); res(null); } };
+      $('[data-x]', m).onclick = () => { close(); res(null); }; $('[data-ok]', m).onclick = ok; }));
+}
+
+/* ---------- shell ---------- */
+function renderNav(){
+  $('#nav').innerHTML = NAV.map(([k, l]) => `<button data-v="${k}" class="${S.view===k?'on':''}">${icon(k)}<span>${l}</span>
+    ${k==='sort' && S.mode==='plan' && S.items.length ? `<span class="count">${S.items.length}</span>` : ''}</button>`).join('');
+  document.querySelectorAll('#nav button').forEach(b => b.onclick = () => { S.navigated = true; go(b.dataset.v); });
+}
+function go(v){
+  S.view = v; closeDrawer(); renderNav();
+  document.querySelectorAll('.view').forEach(el => el.classList.toggle('on', el.id === 'v-' + v));
+  ({sort:renderSort, library:openLibrary, categories:renderCategories, cleanup:renderCleanup, insights:openInsights, settings:renderSettings})[v]();
+}
+function renderFolder(){
+  const parts = S.folder.split('\\'); const last = parts.pop();
+  $('#folderPath').innerHTML = `${esc(parts.join('\\'))}\\<b>${esc(last)}</b>`;
+}
+function applyTheme(){
+  const t = S.settings.theme || 'system';
+  const dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  $('#themeBtn').innerHTML = icon(dark ? 'sun' : 'moon');
+}
+function renderBg(){
+  const b = S.bg, s = S.settings;
+  const mode = s.auto_mode === 'off' ? 'Off' : s.auto_mode === 'interval' ? `Every ${s.interval_hours}h` : 'Instant';
+  const last = b.last_sorted ? `Last: ${b.last_count} at ${b.last_sorted.slice(11,16)}, ${b.last_sorted.slice(5,10)}` : 'Nothing sorted yet';
+  $('#bgcard').innerHTML = `<div class="row"><span class="dot ${b.running?'live':''}"></span><span class="t">Auto-sort · ${mode}</span></div>
+    <div class="s">${b.running ? (s.show_tray_icon ? 'Running in the tray' : 'Running hidden') : 'Not running'} · ${esc(last)}</div>
+    <div style="display:flex;gap:6px;margin-top:10px">${b.running
+      ? `<button class="btn" style="padding:5px 10px;font-size:12.5px" id="bgStop">Stop</button>`
+      : `<button class="btn primary" style="padding:5px 10px;font-size:12.5px" id="bgStart" ${s.auto_mode==='off'?'disabled':''}>Start</button>`}
+      <button class="btn" style="padding:5px 10px;font-size:12.5px" id="bgCfg">Options</button></div>`;
+  const st = $('#bgStart'), sp = $('#bgStop');
+  if (st) st.onclick = async () => { S.bg = await api('start_background'); renderBg(); toast('Auto-sort started', S.settings.show_tray_icon ? 'Look for the icon near the clock.' : 'Running hidden in the background.'); };
+  if (sp) sp.onclick = async () => { S.bg = await api('stop_background'); renderBg(); toast('Auto-sort stopped'); };
+  $('#bgCfg').onclick = () => go('settings');
+}
+
+/* ---------- sort / library grid ---------- */
+function counts(){
+  const c = {}; S.items.forEach(it => c[it.c] = (c[it.c] || 0) + 1);
+  const order = (S.rules?.data.categories || []).map(x => x.name);
+  return Object.entries(c).sort((a, b) => b[1] - a[1] || order.indexOf(a[0]) - order.indexOf(b[0]));
+}
+function visible(){ return S.filter === 'All' ? S.items : S.items.filter(it => it.c === S.filter); }
+
+function renderSort(){
+  const el = $('#v-sort');
+  const planHead = S.mode === 'plan';
+  const title = S.mode === 'search' ? 'Search results' : 'Sort';
+  const sub = S.mode === 'search' ? `${S.items.length} screenshots contain “${esc(S.lastQuery)}”`
+    : S.items.length ? `${S.items.length} new screenshots · nothing moves until you press Sort now. Drag cards onto a category to change it.`
+    : 'Preview where your new screenshots would go.';
+  el.innerHTML = `<div class="vh"><div><h1>${title}</h1><div class="sub">${sub}</div></div>
+    <div class="actions">
+      <input type="range" min="150" max="360" value="${S.cardSize}" id="sizeR" title="Thumbnail size">
+      <button class="btn" data-busy id="undoB">${icon('undo')}Undo</button>
+      <button class="btn" data-busy id="prevB">${icon('eye')}Preview</button>
+      <button class="btn primary" data-busy id="sortB">${icon('play')}Sort now</button></div></div>
+    <div class="chips" id="chips"></div><div id="gridHost"></div>`;
+  $('#prevB').onclick = preview; $('#sortB').onclick = sortNow; $('#undoB').onclick = undo;
+  $('#sizeR').oninput = e => { S.cardSize = +e.target.value; document.documentElement.style.setProperty('--card', S.cardSize + 'px'); };
+  if (!S.items.length && S.mode === 'plan') {
+    $('#gridHost', V()).innerHTML = `<div class="empty"><div class="art">${icon('sparkle')}</div><h3>Ready when you are</h3>
+      <p>Preview reads the text in each new screenshot and shows where it would go. You can change anything before it moves.</p>
+      <button class="btn primary" data-busy id="emptyPrev">${icon('eye')}Preview new screenshots</button></div>`;
+    $('#emptyPrev').onclick = preview; $('#chips', V()).innerHTML = ''; return;
+  }
+  renderChips(); renderGrid();
+}
+function renderChips(){
+  const host = $('#chips', V()); if (!host) return;
+  const cs = counts();
+  host.innerHTML = `<button class="chip ${S.filter==='All'?'on':''}" data-c="All">All <span class="n">${S.items.length}</span></button>` +
+    cs.map(([c, n]) => `<button class="chip ${S.filter===c?'on':''}" data-c="${esc(c)}"><span class="sw" style="background:${color(c)}"></span>${esc(c)} <span class="n">${n}</span></button>`).join('');
+  host.querySelectorAll('.chip').forEach(ch => {
+    ch.onclick = () => { S.filter = ch.dataset.c; S.sel.clear(); renderChips(); renderGrid(); };
+    if (ch.dataset.c !== 'All') {
+      ch.ondragover = e => { e.preventDefault(); ch.classList.add('drop'); };
+      ch.ondragleave = () => ch.classList.remove('drop');
+      ch.ondrop = e => { e.preventDefault(); ch.classList.remove('drop'); moveSelection(ch.dataset.c); };
+    }
+  });
+}
+function renderGrid(){
+  const host = $('#gridHost', V()); if (!host) return;
+  const list = visible();
+  if (!list.length) { host.innerHTML = `<div class="empty"><div class="art">${icon('library')}</div><h3>Nothing here</h3><p>No screenshots in this view.</p></div>`; updateSel(); return; }
+  host.innerHTML = `<div class="grid ${S.sel.size?'selecting':''}" id="grid">` + list.map((it, i) => `
+    <div class="card ${S.sel.has(it.p)?'sel':''}" draggable="true" data-i="${i}">
+      <div class="thumb"><img loading="lazy" decoding="async" src="${img(it.p, 480)}" onload="this.classList.add('ld')">
+        <span class="tag"><i style="background:${color(it.c)}"></i>${esc(it.c)}</span><span class="check"></span></div>
+      <div class="meta"><div class="name">${esc(it.n)}</div><div class="why">${esc(it.r || ' ')}</div></div></div>`).join('') + '</div>';
+  const cards = host.querySelectorAll('.card');
+  cards.forEach(card => {
+    const it = list[+card.dataset.i];
+    card.onclick = e => {
+      if (e.target.classList.contains('check') || e.ctrlKey) toggleSel(it.p);
+      else if (e.shiftKey && S.last != null) rangeSel(list, it.p);
+      else if (S.sel.size) toggleSel(it.p);
+      else openDrawer(it);
+      S.last = it.p;
+    };
+    card.ondblclick = () => openLightbox(list.indexOf(it));
+    card.oncontextmenu = e => { e.preventDefault(); if (!S.sel.has(it.p)) { S.sel.clear(); S.sel.add(it.p); refreshSel(); } moveMenu(e.clientX, e.clientY); };
+    card.ondragstart = e => { if (!S.sel.has(it.p)) { S.sel.clear(); S.sel.add(it.p); refreshSel(); }
+      e.dataTransfer.setData('text/plain', 'cards'); document.querySelectorAll('.card.sel').forEach(c => c.classList.add('ghost')); };
+    card.ondragend = () => document.querySelectorAll('.card.ghost').forEach(c => c.classList.remove('ghost'));
+  });
+  updateSel();
+}
+function toggleSel(p){ S.sel.has(p) ? S.sel.delete(p) : S.sel.add(p); refreshSel(); }
+function rangeSel(list, p){ const a = list.findIndex(x => x.p === S.last), b = list.findIndex(x => x.p === p);
+  list.slice(Math.min(a, b), Math.max(a, b) + 1).forEach(x => S.sel.add(x.p)); refreshSel(); }
+function refreshSel(){
+  V().querySelectorAll('#grid .card').forEach(c => { const it = visible()[+c.dataset.i]; c.classList.toggle('sel', S.sel.has(it.p)); });
+  $('#grid', V())?.classList.toggle('selecting', S.sel.size > 0); updateSel();
+}
+function updateSel(){
+  const bar = $('#selbar'), n = S.sel.size;
+  const show = n > 0 && (S.view === 'sort' || S.view === 'library');
+  bar.classList.toggle('on', show);
+  if (!show) return;
+  bar.innerHTML = `<b>${n}</b>&nbsp;selected
+    <button class="btn" id="sbMove">${icon('move')}Move to…</button>
+    <button class="btn" id="sbOpen">${icon('open')}Open</button>
+    <button class="btn" id="sbAll">Select all</button>
+    <button class="btn" id="sbClear">${icon('x')}</button>`;
+  $('#sbMove').onclick = e => { const r = e.currentTarget.getBoundingClientRect(); moveMenu(r.left, r.top - 8, true); };
+  $('#sbOpen').onclick = () => [...S.sel].slice(0, 8).forEach(p => api('open', p));
+  $('#sbAll').onclick = () => { visible().forEach(it => S.sel.add(it.p)); refreshSel(); };
+  $('#sbClear').onclick = () => { S.sel.clear(); refreshSel(); };
+}
+function moveMenu(x, y, above=false){
+  closeMenu();
+  const names = [...(S.rules?.data.categories || []).map(c => c.name), S.rules?.data.fallback || 'Other', S.rules?.data.no_text || 'No Text'];
+  const m = document.createElement('div'); m.className = 'menu'; m.id = 'menu';
+  m.innerHTML = `<div class="lbl">Move ${S.sel.size} to</div>` + names.map(n => `<button data-c="${esc(n)}"><span class="sw" style="background:${color(n)}"></span>${esc(n)}</button>`).join('') +
+    `<div class="sep"></div><button data-new>${icon('plus')}New category…</button>` +
+    (S.sel.size === 1 ? `<div class="sep"></div><button data-open>${icon('open')}Open</button><button data-reveal>${icon('library')}Show in folder</button>` : '');
+  document.body.appendChild(m);
+  const r = m.getBoundingClientRect();
+  m.style.left = Math.min(x, innerWidth - r.width - 10) + 'px';
+  m.style.top = (above ? Math.max(10, y - r.height) : Math.min(y, innerHeight - r.height - 10)) + 'px';
+  m.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { closeMenu(); moveSelection(b.dataset.c); });
+  $('[data-new]', m).onclick = async () => { closeMenu(); const n = await prompt2('New category', 'Name for the new category:'); if (n) moveSelection(n); };
+  const one = [...S.sel][0];
+  $('[data-open]', m) && ($('[data-open]', m).onclick = () => { closeMenu(); api('open', one); });
+  $('[data-reveal]', m) && ($('[data-reveal]', m).onclick = () => { closeMenu(); api('reveal', one); });
+  setTimeout(() => document.addEventListener('mousedown', outside), 0);
+}
+function outside(e){ if (!e.target.closest('#menu')) closeMenu(); }
+function closeMenu(){ $('#menu')?.remove(); document.removeEventListener('mousedown', outside); }
+
+async function moveSelection(cat){
+  const paths = [...S.sel].filter(p => S.items.find(it => it.p === p && it.c !== cat));
+  if (!paths.length) return;
+  const from = new Set(paths.map(p => S.items.find(it => it.p === p).c));
+  if (S.mode === 'plan') {
+    S.items.forEach(it => { if (paths.includes(it.p)) { it.c = cat; it.r = 'You chose this'; } });
+    toast(`${paths.length} will go to ${cat}`, 'Applied when you press Sort now');
+  } else {
+    const moved = await api('move', paths, cat);
+    S.items.forEach(it => { if (moved[it.p]) { it.p = moved[it.p]; it.n = it.p.split('\\').pop(); it.c = cat; it.r = 'You moved this'; } });
+    toast(`Moved ${Object.keys(moved).length} to ${cat}`, '', {action:'Undo', onAction: undo});
+  }
+  S.sel.clear(); if (S.filter !== 'All' && from.has(S.filter) && !S.items.some(it => it.c === S.filter)) S.filter = 'All';
+  renderNav(); renderChips(); renderGrid(); teach(cat, paths.map(p => S.items.find(it => it.c === cat && (it.p === p || it.p.endsWith(p.split('\\').pop()))))?.filter(Boolean).map(it => it.p));
+}
+async function teach(cat, paths){
+  if (!paths?.length) return;
+  const words = await api('suggest', paths, cat);
+  if (!words.length) return;
+  modal(`<h3>${icon('sparkle')} Teach it</h3><p>Tick words that mean a screenshot belongs in <b>${esc(cat)}</b>. Similar screenshots will go there automatically next time.</p>
+    <div id="tw">${words.map(w => `<span class="toggle-chip" data-w="${esc(w)}">${esc(w)}</span>`).join('')}</div>
+    <div class="foot"><button class="btn" data-x>Skip</button><button class="btn primary" data-ok>Add keywords</button></div>`, (m, close) => {
+      m.querySelectorAll('.toggle-chip').forEach(c => c.onclick = () => c.classList.toggle('on'));
+      $('[data-x]', m).onclick = close;
+      $('[data-ok]', m).onclick = async () => { const ws = [...m.querySelectorAll('.toggle-chip.on')].map(c => c.dataset.w);
+        close(); if (ws.length) { S.rules = await api('add_keywords', cat, ws); S.colors = S.rules.colors; toast(`Added ${ws.length} keyword${ws.length>1?'s':''} to ${cat}`); } };
+    });
+}
+
+async function preview(){
+  const r = await job('preview', {}, 'Reading new screenshots…');
+  S.mode = 'plan'; S.items = r.items; S.filter = 'All'; S.sel.clear(); go('sort');
+  if (!r.items.length) toast('No new screenshots', 'Everything in this folder is already sorted.');
+}
+async function sortNow(){
+  const plan = S.mode === 'plan' && S.items.length ? S.items.map(it => ({p: it.p, c: it.c})) : null;
+  const r = await job('sort', {plan}, 'Sorting…');
+  S.items = []; S.sel.clear(); S.mode = 'plan'; renderNav(); renderSort();
+  toast(r.moved ? `Sorted ${r.moved} screenshot${r.moved>1?'s':''}` : 'Nothing to sort', r.moved ? 'Saved into category folders.' : 'No new screenshots in this folder.',
+        r.moved ? {action:'Undo', onAction: undo} : {});
+}
+async function undo(){
+  const r = await job('undo', {}, 'Undoing…');
+  toast(r.had ? `Moved ${r.moved} file${r.moved===1?'':'s'} back` : 'Nothing to undo');
+  if (S.view === 'library') openLibrary(); else { S.items = []; renderNav(); renderSort(); }
+}
+
+/* library */
+async function openLibrary(){
+  const el = $('#v-library');
+  el.innerHTML = `<div class="vh"><div><h1>Library</h1><div class="sub">Everything in this folder, by category. Right-click or drag to re-file.</div></div>
+    <div class="actions"><input type="range" min="150" max="360" value="${S.cardSize}" id="sizeL">
+    <button class="btn" data-busy id="renB">${icon('rename')}Readable names…</button>
+    <button class="btn" data-busy id="undoL">${icon('undo')}Undo</button></div></div>
+    <div class="chips" id="chips"></div><div id="gridHost"><div class="empty"><div class="art">${icon('library')}</div><h3>Loading…</h3></div></div>`;
+  $('#sizeL').oninput = e => { S.cardSize = +e.target.value; document.documentElement.style.setProperty('--card', S.cardSize + 'px'); };
+  $('#undoL').onclick = undo;
+  $('#renB').onclick = async () => {
+    if (!await confirmBox('Readable file names', 'Rename every sorted screenshot to something like “2026-10-13 234220 Chat - Alex.png”? Undo puts the old names back.', 'Rename')) return;
+    const r = await job('rename', {}, 'Renaming…'); toast(`Renamed ${r.moved} files`, '', {action:'Undo', onAction: undo}); openLibrary();
+  };
+  const show = items => {
+    S.mode = 'browse'; S.items = items;
+    if (S.filter !== 'All' && !S.items.some(i => i.c === S.filter)) S.filter = 'All';
+    renderChips(); renderGrid();
+  };
+  // 1) show the remembered Library straight away
+  let shown = '';
+  try {
+    const snap = await api('library_snapshot');
+    if (snap.items?.length && S.view === 'library') { S.sel.clear(); show(snap.items); shown = snap.items.map(i => i.p + i.c).join('|'); }
+  } catch (e) {}
+  // 2) quietly check for changes, and only redraw if something changed
+  try {
+    const r = await job('browse', {}, shown ? 'Checking for changes…' : 'Loading library…');
+    if (S.view !== 'library') return;
+    if (r.items.map(i => i.p + i.c).join('|') !== shown) { if (!shown) S.sel.clear(); show(r.items); }
+  } catch (e) {}
+}
+
+/* drawer & lightbox */
+function openDrawer(it){
+  S.drawerItem = it; const d = $('#drawer');
+  d.innerHTML = `<div class="hd"><span class="ttl">${esc(it.n)}</span>
+    <button class="iconbtn" id="dOpen" title="Open">${icon('open')}</button><button class="iconbtn" id="dClose" title="Close">${icon('x')}</button></div>
+    <div class="bd"><img src="${img(it.p, 820)}" id="dImg">
+      <div class="kv"><span>Category</span><span><span class="pill"><span class="dot" style="background:${color(it.c)}"></span>${esc(it.c)}</span></span>
+        <span>Why</span><span>${esc(it.r || '—')}</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px"><button class="btn" id="dMove">${icon('move')}Move to…</button><button class="btn" id="dReveal">${icon('library')}Show in folder</button></div>
+      <div style="font-weight:600;margin-bottom:6px">Text found</div><div class="ocr">${esc(it.t || 'No text found in this image.')}</div></div>`;
+  d.classList.add('on');
+  $('#dClose').onclick = closeDrawer; $('#dOpen').onclick = () => api('open', it.p); $('#dReveal').onclick = () => api('reveal', it.p);
+  $('#dImg').onclick = () => openLightbox(visible().indexOf(it));
+  $('#dMove').onclick = e => { S.sel.clear(); S.sel.add(it.p); const r = e.currentTarget.getBoundingClientRect(); moveMenu(r.left, r.bottom + 6); };
+}
+function closeDrawer(){ $('#drawer').classList.remove('on'); S.drawerItem = null; }
+function openLightbox(i){
+  const list = visible(); if (i < 0 || !list.length) return;
+  S.lbIndex = (i + list.length) % list.length; const it = list[S.lbIndex]; const lb = $('#lightbox');
+  lb.innerHTML = `<img src="${img(it.p, 0)}"><div class="cap">${esc(it.n)} · ${esc(it.c)} · ${S.lbIndex + 1} / ${list.length}</div>
+    <button class="nav prev">${icon('left')}</button><button class="nav next">${icon('right')}</button><button class="nav x">${icon('x')}</button>`;
+  lb.classList.add('on');
+  $('.prev', lb).onclick = e => { e.stopPropagation(); openLightbox(S.lbIndex - 1); };
+  $('.next', lb).onclick = e => { e.stopPropagation(); openLightbox(S.lbIndex + 1); };
+  $('.x', lb).onclick = () => lb.classList.remove('on');
+  lb.onclick = e => { if (e.target === lb) lb.classList.remove('on'); };
+}
+
+/* ---------- categories ---------- */
+function kwParts(k){ return typeof k === 'object' ? [k.k, k.w ?? 1] : [k, 1]; }
+function renderCategories(){
+  const data = S.rules.data; const el = $('#v-categories');
+  if (!S.editCat || !data.categories.find(c => c.name === S.editCat)) S.editCat = data.categories[0]?.name;
+  const c = data.categories.find(x => x.name === S.editCat);
+  el.innerHTML = `<div class="vh"><div><h1>Categories</h1><div class="sub">A screenshot goes to the category whose keywords add up to the most points. Drag to reorder - higher wins ties.</div></div>
+    <div class="actions"><button class="btn primary" id="catAdd">${icon('plus')}New category</button></div></div>
+    <div class="cat-wrap"><div class="cat-list" id="catList">${data.categories.map((x, i) => `
+      <div class="cat-item ${x.name===S.editCat?'on':''}" draggable="true" data-i="${i}"><span class="sw" style="background:${color(x.name)}"></span>
+      <span class="nm">${esc(x.name)}</span><span class="k">${x.keywords.length}</span></div>`).join('')}</div>
+    ${c ? `<div class="box"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2 style="margin:0;font-size:18px"><span class="sw" style="width:12px;height:12px;border-radius:4px;display:inline-block;background:${color(c.name)}"></span>${esc(c.name)}</h2>
+        <div style="margin-left:auto;display:flex;gap:8px"><button class="btn" id="catRen">${icon('rename')}Rename</button><button class="btn danger" id="catDel">${icon('cleanup')}Delete</button></div></div>
+      <div class="setting" style="border:0;padding-top:16px"><div class="lab">Minimum score<small>Points needed before this category can win. Higher = stricter.</small></div>
+        <div class="stepper"><button id="msDown">−</button><span id="ms">${c.min_score ?? c.min_matches ?? 1}</span><button id="msUp">+</button></div></div>
+      <div style="font-weight:600;margin-top:10px">Keywords <span style="color:var(--text-3);font-weight:400;font-size:12.5px">· click a weight to change it (½ weak → 3 strong)</span></div>
+      <div class="kws">${c.keywords.map((k, i) => { const [p, w] = kwParts(k); const cls = w >= 3 ? 'w3' : w >= 2 ? 'w2' : w < 1 ? 'w05' : '';
+        return `<span class="kw" title="${esc(p)}"><code>${esc(p.replace(/\\b/g, '').replace(/\\([^\w\s])/g, '$1'))}</code><button class="w ${cls}" data-i="${i}" title="${esc(p)}">${w < 1 ? '½' : w}</button><button class="x" data-i="${i}">${icon('x','i" style="width:13px;height:13px')}</button></span>`; }).join('') || '<span style="color:var(--text-3)">No keywords yet.</span>'}</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px"><input class="field" id="kwNew" placeholder="Add a word or phrase…" style="flex:1">
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text-2);font-size:13px"><input type="checkbox" id="kwRegex"> regular expression</label>
+        <div class="seg" id="kwW"><button data-w="0.5">½</button><button data-w="1" class="on">1</button><button data-w="2">2</button><button data-w="3">3</button></div>
+        <button class="btn primary" id="kwAdd">Add</button></div></div>` : ''}</div>`;
+  const save = async () => { try { S.rules = await api('save_rules', data); S.colors = S.rules.colors; renderCategories(); } catch (e) { toast('Could not save', e.message, {err:true}); } };
+  el.querySelectorAll('.cat-item').forEach(it => {
+    it.onclick = () => { S.editCat = data.categories[+it.dataset.i].name; renderCategories(); };
+    it.ondragstart = e => e.dataTransfer.setData('text/plain', it.dataset.i);
+    it.ondragover = e => { e.preventDefault(); it.classList.add('dragover'); };
+    it.ondragleave = () => it.classList.remove('dragover');
+    it.ondrop = e => { e.preventDefault(); const from = +e.dataTransfer.getData('text/plain'), to = +it.dataset.i;
+      if (isNaN(from) || from === to) return; const [m] = data.categories.splice(from, 1); data.categories.splice(to, 0, m); save(); };
+  });
+  $('#catAdd').onclick = async () => { const n = await prompt2('New category', 'Name for the new category:'); if (!n) return;
+    data.categories.push({name: n, min_score: 2, keywords: []}); S.editCat = n; save(); };
+  if (!c) return;
+  $('#catRen').onclick = async () => { const n = await prompt2('Rename category', 'New name (existing folders keep their name):', c.name); if (n && n !== c.name) { c.name = n; S.editCat = n; save(); } };
+  $('#catDel').onclick = async () => { if (await confirmBox('Delete category', `Delete “${c.name}”? Files already in its folder are not touched.`, 'Delete', true)) { data.categories.splice(data.categories.indexOf(c), 1); S.editCat = null; save(); } };
+  const setMs = d => { c.min_score = Math.max(0.5, (c.min_score ?? c.min_matches ?? 1) + d); delete c.min_matches; save(); };
+  $('#msDown').onclick = () => setMs(-0.5); $('#msUp').onclick = () => setMs(0.5);
+  const W = [0.5, 1, 2, 3];
+  el.querySelectorAll('.kw .w').forEach(b => b.onclick = () => { const i = +b.dataset.i; const [p, w] = kwParts(c.keywords[i]);
+    const nw = W[(W.indexOf(w) + 1) % W.length] ?? 1; c.keywords[i] = nw === 1 ? p : {k: p, w: nw}; save(); });
+  el.querySelectorAll('.kw .x').forEach(b => b.onclick = () => { c.keywords.splice(+b.dataset.i, 1); save(); });
+  let w = 1; el.querySelectorAll('#kwW button').forEach(b => b.onclick = () => { w = +b.dataset.w; el.querySelectorAll('#kwW button').forEach(x => x.classList.toggle('on', x === b)); });
+  const add = () => { const v = $('#kwNew').value.trim(); if (!v) return;
+    const p = $('#kwRegex').checked ? v : '\\b' + v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b';
+    try { new RegExp(p); } catch (e) { toast('That pattern is not valid', e.message, {err:true}); return; }
+    c.keywords.push(w === 1 ? p : {k: p, w}); save(); };
+  $('#kwAdd').onclick = add; $('#kwNew').onkeydown = e => { if (e.key === 'Enter') add(); };
+}
+
+/* ---------- clean up ---------- */
+async function renderCleanup(){
+  const el = $('#v-cleanup');
+  el.innerHTML = `<div class="vh"><div><h1>Clean up</h1><div class="sub">Free up space and remove copies. Anything removed goes to the Recycle Bin.</div></div></div>
+    <div class="cards">
+      <div class="box"><h2>${icon('copy')}Duplicates</h2><p class="desc">Finds screenshots that look the same. The best copy in each group is kept.</p>
+        <div style="display:flex;gap:8px"><button class="btn primary" data-busy id="dupFind">Find duplicates</button><button class="btn" data-busy id="dupRec" ${S.dups.length?'':'disabled'}>Recycle extra copies</button></div>
+        <div id="dupHost" style="margin-top:12px"></div></div>
+      <div class="box"><h2>${icon('zip')}Save space</h2>
+        <div class="seg" id="fmtSeg" style="margin:4px 0 10px">
+          <button data-m="avif" class="${S.fmt==='avif'?'on':''}">AVIF · much smaller</button>
+          <button data-m="webp" class="${S.fmt!=='avif'?'on':''}">WebP · identical</button></div>
+        <p class="desc" id="fmtDesc"></p>
+        <div id="sizeHost" style="color:var(--text-2)">Checking…</div>
+        <button class="btn primary" data-busy id="shrinkB" style="margin-top:12px">Convert…</button>
+        <div id="bkHost" style="margin-top:14px;font-size:13px;color:var(--text-2)"></div></div>
+    </div>`;
+  renderDups();
+  $('#dupFind').onclick = async () => { const r = await job('dups', {}, 'Comparing screenshots…'); S.dups = r.groups; renderCleanup();
+    toast(r.groups.length ? `${r.groups.length} group${r.groups.length>1?'s':''} of duplicates` : 'No duplicates found'); };
+  $('#dupRec').onclick = async () => { const extra = S.dups.flatMap(g => g.slice(1));
+    if (!await confirmBox('Recycle extra copies', `Send ${extra.length} extra copies to the Recycle Bin? You can restore them from there.`, 'Recycle', true)) return;
+    const r = await job('recycle', {paths: extra}, 'Recycling…'); S.dups = []; renderCleanup(); toast(`Sent ${r.removed} files to the Recycle Bin`); };
+  S.fmt = S.fmt || 'avif';
+  const FMT = {
+    avif: {name: 'AVIF', what: 'PNG and WebP', ratio: 0.15,
+      desc: 'Converts PNG and WebP screenshots to AVIF (quality 80). Usually 80-90% smaller and looks the same, text included - but it is not pixel-for-pixel identical. Originals are kept in a backup folder next to the app until you delete them.'},
+    webp: {name: 'WebP', what: 'PNG', ratio: 0.6,
+      desc: 'Converts PNG screenshots to lossless WebP - pixel-for-pixel identical, usually 30-50% smaller. Originals go to the Recycle Bin.'},
+  };
+  el.querySelectorAll('#fmtSeg button').forEach(b => b.onclick = () => { S.fmt = b.dataset.m; renderCleanup(); });
+  const f = FMT[S.fmt];
+  $('#fmtDesc').textContent = f.desc;
+  $('#shrinkB').innerHTML = `${icon('zip')}Convert to ${f.name}…`;
+  const est = await api('size_estimate', S.fmt);
+  const mb = b => (b/1e6).toLocaleString(undefined, {maximumFractionDigits: 0});
+  $('#sizeHost').innerHTML = est.count ? `<b>${est.count.toLocaleString()}</b> ${f.what} files · <b>${mb(est.size)} MB</b>
+    <div class="meter"><i style="width:${Math.round(f.ratio*100)}%"></i></div>
+    <small style="color:var(--text-3)">Estimated after converting: about ${mb(est.size*f.ratio)} MB (saves ~${mb(est.size*(1-f.ratio))} MB)</small>` : `No ${f.what} files to convert.`;
+  $('#shrinkB').disabled = !est.count;
+  $('#bkHost').innerHTML = est.backup_count ? `Backup of originals: <b>${est.backup_count.toLocaleString()}</b> files · <b>${mb(est.backup_size)} MB</b>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="bkOpen">${icon('open')}Open backup folder</button>
+    <button class="btn danger" id="bkDel">${icon('cleanup')}Delete backup…</button></div>` : '';
+  if (est.backup_count) {
+    $('#bkOpen').onclick = () => api('open_originals');
+    $('#bkDel').onclick = async () => {
+      if (!await confirmBox('Delete backup of originals', `Permanently delete ${est.backup_count} original files (${mb(est.backup_size)} MB)? This can't be undone - only do it once you're happy with the converted screenshots.`, 'Delete permanently', true)) return;
+      const r = await api('empty_originals'); toast(`Deleted ${r.removed} backed-up originals`, `${mb(r.size)} MB freed`); renderCleanup(); };
+  }
+  $('#shrinkB').onclick = async () => {
+    const msg = S.fmt === 'avif'
+      ? `Convert ${est.count} screenshots (${mb(est.size)} MB) to AVIF? They'll look the same but won't be pixel-identical. The originals move to the backup folder, so you can check the results before deleting them.`
+      : `Convert ${est.count} PNGs (${mb(est.size)} MB) to lossless WebP? Pictures stay identical; originals go to the Recycle Bin.`;
+    if (!await confirmBox(`Convert to ${f.name}`, msg, 'Convert')) return;
+    const r = await job('shrink', {mode: S.fmt}, `Converting to ${f.name}…`);
+    toast(`Converted ${r.converted} files`, `${mb(r.before)} MB → ${mb(r.after)} MB`); renderCleanup(); };
+}
+function renderDups(){
+  const host = $('#dupHost'); if (!host) return;
+  host.innerHTML = S.dups.map(g => `<div class="dupgroup">${g.map((p, i) => `<div class="card" data-p="${esc(p)}"><div class="thumb"><img class="ld" src="${img(p, 360)}">
+    <span class="${i ? 'extra' : 'keep'}">${i ? 'extra' : 'keep'}</span></div><div class="meta"><div class="name">${esc(p.split('\\').pop())}</div></div></div>`).join('')}</div>`).join('');
+  host.querySelectorAll('.card').forEach(c => c.ondblclick = () => api('open', c.dataset.p));
+}
+
+/* ---------- insights ---------- */
+async function openInsights(){
+  const el = $('#v-insights');
+  el.innerHTML = `<div class="vh"><div><h1>Insights</h1><div class="sub">What your screenshots are about, and when you take them.</div></div>
+    <div class="actions"><button class="btn primary" data-busy id="repB">${icon('report')}Full report (League, YouTube)</button></div></div><div id="insHost"></div>`;
+  $('#repB').onclick = async () => { await job('report', {}, 'Building report…'); toast('Report opened in your browser'); };
+  try {
+    const r = await job('insights', {}, 'Counting…');
+    const maxC = Math.max(...r.cats.map(c => c[1]), 1), maxM = Math.max(...r.months.map(m => m[1]), 1);
+    const busiest = r.months.reduce((a, b) => b[1] > a[1] ? b : a, ['-', 0]);
+    $('#insHost').innerHTML = `<div class="tiles">
+        <div class="tile"><div class="big">${r.total.toLocaleString()}</div><div class="lbl">screenshots</div></div>
+        <div class="tile"><div class="big">${r.cats.length}</div><div class="lbl">categories</div></div>
+        <div class="tile"><div class="big">${(r.size/1e6).toFixed(0)} MB</div><div class="lbl">on disk</div></div>
+        <div class="tile"><div class="big">${busiest[0]}</div><div class="lbl">busiest month (${busiest[1]})</div></div></div>
+      <div class="cards"><div class="box"><h2>By category</h2><div class="bars" style="margin-top:12px">${r.cats.map(([c, n]) => `
+          <div class="bar" title="${esc(c)}: ${n}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c)}</span>
+          <div class="track"><div class="fill" style="width:0;background:${color(c)}" data-w="${100*n/maxC}"></div></div><span class="v">${n}</span></div>`).join('')}</div></div>
+        <div class="box"><h2>Per month</h2><div class="cols">${r.months.map(([m, n]) => `<div class="c" title="${m}: ${n}">
+          <i style="height:0" data-h="${100*n/maxM}"></i><small>${m.slice(2)}</small></div>`).join('')}</div></div></div>`;
+    requestAnimationFrame(() => { document.querySelectorAll('.fill').forEach(f => f.style.width = f.dataset.w + '%');
+      document.querySelectorAll('.cols i').forEach(f => f.style.height = f.dataset.h + '%'); });
+  } catch (e) {}
+}
+
+/* ---------- settings ---------- */
+function sw(key, on){ return `<label class="switch"><input type="checkbox" data-k="${key}" ${on?'checked':''}><span></span></label>`; }
+function renderSettings(){
+  const s = S.settings, el = $('#v-settings');
+  el.innerHTML = `<div class="vh"><div><h1>Settings</h1><div class="sub">Changes save automatically.</div></div></div>
+  <div class="cards">
+    <div class="box"><h2>${icon('bolt')}Auto-sort in the background</h2><p class="desc">Runs quietly while you use your PC and starts when you log in.</p>
+      <div class="setting"><div class="lab">When to sort</div>
+        <div class="seg" id="modeSeg">${[['instant','Instantly'],['interval','Every few hours'],['off','Off']].map(([k, l]) => `<button data-m="${k}" class="${s.auto_mode===k?'on':''}">${l}</button>`).join('')}</div></div>
+      <div class="setting" id="hoursRow" style="${s.auto_mode==='interval'?'':'display:none'}"><div class="lab">Every <b id="hv">${s.interval_hours}</b> hours<small>Sweeps the folder on this schedule.</small></div>
+        <input type="range" min="1" max="24" value="${s.interval_hours}" id="hours"></div>
+      <div class="setting"><div class="lab">Show tray icon<small>Off = runs completely hidden. Stop it from here.</small></div>${sw('show_tray_icon', s.show_tray_icon)}</div>
+      <div class="setting"><div class="lab">Start when I log in</div>${sw('start_tray_at_login', s.start_tray_at_login)}</div>
+      <div class="setting"><div class="lab">Notifications<small>Needs the tray icon.</small></div>${sw('notifications', s.notifications)}</div></div>
+    <div class="box"><h2>${icon('sort')}Sorting</h2><p class="desc">How files are filed and named.</p>
+      <div class="setting"><div class="lab">Month folders<small>League - Stats & Builds / 2026-10 / …</small></div>${sw('month_folders', s.month_folders)}</div>
+      <div class="setting"><div class="lab">Readable file names<small>2026-10-13 234220 Chat - Alex.png</small></div>${sw('rename_files', s.rename_files)}</div>
+      <div class="setting"><div class="lab">Sort by look<small>Screenshots without text are matched to similar sorted ones.</small></div>${sw('use_look', s.use_look)}</div>
+      <div class="setting"><div class="lab">Read Arabic text</div>${sw('arabic', (s.languages||[]).includes('ar-SA'))}</div>
+      <div class="setting"><div class="lab">Your names<small>Left out of file names for chats.</small></div><input class="field" id="names" value="${esc((s.your_names||[]).join(', '))}" style="width:180px"></div></div>
+    <div class="box"><h2>${icon('robot')}Claude (optional)</h2><p class="desc">For screenshots still unsorted after the steps above. Only those are sent (downscaled) to Anthropic's API and cost a fraction of a cent each on your API account.</p>
+      <div class="setting"><div class="lab">Ask Claude about leftovers</div>${sw('claude_enabled', s.claude_enabled)}</div>
+      <div class="setting"><div class="lab">API key<small>${s.has_claude_key ? 'A key is saved. Type a new one to replace it.' : 'Or set ANTHROPIC_API_KEY in Windows.'}</small></div>
+        <input class="field" type="password" id="key" placeholder="${s.has_claude_key ? '••••••••••••' : 'sk-ant-…'}" style="width:170px"><button class="btn" id="keyTest">Test</button></div></div>
+    <div class="box"><h2>${icon('settings')}Windows</h2><p class="desc">Shortcuts into the rest of Windows.</p>
+      <div class="setting"><div class="lab">File Explorer right-click menu<small>“Sort with Screenshot Sorter” on any folder (under Show more options on Windows 11).</small></div>${sw('explorer_menu', s.explorer_menu)}</div>
+      <div class="setting"><div class="lab">Theme</div><div class="seg" id="themeSeg">${[['system','System'],['light','Light'],['dark','Dark']].map(([k, l]) => `<button data-t="${k}" class="${(s.theme||'system')===k?'on':''}">${l}</button>`).join('')}</div></div></div>
+    <div class="box"><h2>${icon('download')}Updates</h2><p class="desc">You have version ${esc(S.version||'')}. New versions come from github.com/JustSad42/screenshot-sorter.</p>
+      <div class="setting"><div class="lab">Check for updates automatically<small>Once a day; you choose when to install.</small></div>${sw('check_updates', s.check_updates !== false)}</div>
+      <div class="setting"><div class="lab" id="updInfo">${updText()}</div><button class="btn" id="updCheck">Check now</button></div></div>
+  </div>`;
+  $('#updCheck').onclick = async () => { $('#updInfo').textContent = 'Checking…'; S.upd = await api('check_update', true); $('#updInfo').innerHTML = updText(); renderUpd(); };
+  const save = async (vals, msg='Saved') => {
+    const r = await api('save_settings', vals); S.settings = r.settings; S.bg = r.background; renderBg(); applyTheme();
+    r.warnings?.forEach(w => toast('Heads up', w, {err:true})); toast(msg);
+  };
+  el.querySelectorAll('.switch input').forEach(i => i.onchange = () => {
+    if (i.dataset.k === 'arabic') save({languages: i.checked ? ['en-US','ar-SA'] : ['en-US']});
+    else save({[i.dataset.k]: i.checked});
+  });
+  el.querySelectorAll('#modeSeg button').forEach(b => b.onclick = async () => {
+    el.querySelectorAll('#modeSeg button').forEach(x => x.classList.toggle('on', x === b));
+    $('#hoursRow').style.display = b.dataset.m === 'interval' ? '' : 'none';
+    await save({auto_mode: b.dataset.m}, b.dataset.m === 'off' ? 'Auto-sort turned off' : 'Auto-sort mode saved');
+    if (b.dataset.m !== 'off' && !S.bg.running) { S.bg = await api('start_background'); renderBg(); }
+  });
+  $('#hours').oninput = e => $('#hv').textContent = e.target.value;
+  $('#hours').onchange = e => save({interval_hours: +e.target.value});
+  $('#names').onchange = e => save({your_names: e.target.value.split(',').map(x => x.trim()).filter(Boolean)});
+  $('#key').onchange = e => { if (e.target.value.trim()) save({claude_api_key: e.target.value.trim()}, 'API key saved'); };
+  $('#keyTest').onclick = async () => { const r = await job('testclaude', {key: $('#key').value.trim()}, 'Contacting Claude…'); toast(r.message, '', {err: !r.ok}); };
+  el.querySelectorAll('#themeSeg button').forEach(b => b.onclick = () => { el.querySelectorAll('#themeSeg button').forEach(x => x.classList.toggle('on', x === b)); save({theme: b.dataset.t}, 'Theme saved'); });
+}
+
+/* ---------- updates ---------- */
+function updText(){
+  const u = S.upd; if (!u) return 'Not checked yet.';
+  if (u.error) return esc(u.error);
+  return u.available ? `Version <b>${esc(u.latest)}</b> is available.` : `You have the newest version.`;
+}
+function renderUpd(){
+  const u = S.upd, el = $('#updbar');
+  if (!u || !u.available || S.updHidden === u.latest) { el.classList.remove('on'); return; }
+  el.innerHTML = `${icon('download')}<div class="grow">Screenshot Sorter <b>${esc(u.latest)}</b> is available. You have ${esc(u.current)}.</div>
+    <button class="btn" id="updNotes">What's new</button>
+    <button class="btn primary" id="updGo">${u.can_install ? 'Update now' : 'Download'}</button><button class="iconbtn" id="updX" title="Later">${icon('x')}</button>`;
+  el.classList.add('on');
+  $('#updX').onclick = () => { S.updHidden = u.latest; renderUpd(); };
+  $('#updNotes').onclick = () => api('open_release_page');
+  $('#updGo').onclick = async () => {
+    if (!u.can_install) return api('open_release_page');
+    $('#updGo').disabled = true; $('#updGo').textContent = 'Downloading…'; progress(true);
+    try { const v = await api('install_update'); toast(`Installing ${v}…`, 'The app will close and reopen by itself.', {ms: 20000}); }
+    catch (e) { progress(false); $('#updGo').disabled = false; $('#updGo').textContent = 'Update now'; toast("Couldn't update", String(e), {err:true}); }
+  };
+}
+
+/* ---------- search, keys, boot ---------- */
+async function doSearch(q){
+  if (!q) return;
+  const r = await job('search', {q}, 'Searching…');
+  S.mode = 'search'; S.lastQuery = q; S.items = r.items; S.filter = 'All'; S.sel.clear(); S.view = 'sort'; go('sort');
+}
+document.addEventListener('keydown', e => {
+  const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
+  if (e.key === '/' && !typing) { e.preventDefault(); $('#q').focus(); }
+  if (e.key === 'Escape') { if ($('#lightbox').classList.contains('on')) $('#lightbox').classList.remove('on');
+    else if ($('#modal').classList.contains('on')) $('#modal').classList.remove('on'); else if (S.sel.size) { S.sel.clear(); refreshSel(); } else closeDrawer(); }
+  if ($('#lightbox').classList.contains('on')) { if (e.key === 'ArrowLeft') openLightbox(S.lbIndex - 1); if (e.key === 'ArrowRight') openLightbox(S.lbIndex + 1); }
+  if (e.ctrlKey && e.key.toLowerCase() === 'a' && !typing && (S.view === 'sort' || S.view === 'library')) { e.preventDefault(); visible().forEach(it => S.sel.add(it.p)); refreshSel(); }
+});
+$('#q').onkeydown = e => { if (e.key === 'Enter') doSearch(e.target.value.trim()); };
+$('#themeBtn').onclick = async () => { const dark = document.documentElement.dataset.theme === 'dark';
+  const r = await api('save_settings', {theme: dark ? 'light' : 'dark'}); S.settings = r.settings; applyTheme(); };
+$('#folderBtn').onclick = async e => { if (e.target.closest('#openFolder')) return api('open_folder');
+  const f = await api('pick_folder'); if (f) { S.folder = f; renderFolder(); S.items = []; S.dups = []; S.mode = 'plan'; go(S.view); toast('Folder changed', f); } };
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+renderNav();
+(async () => {
+  const st = await api('init');
+  Object.assign(S, {version: st.version, folder: st.folder, settings: st.settings, rules: st.rules, colors: st.rules.colors, bg: st.background});
+  applyTheme(); renderFolder(); renderBg();
+  if (!S.navigated) go('sort'); else { renderNav(); if (S.view === 'library') openLibrary(); }  // keep a screen picked while starting
+  setInterval(async () => { S.bg = await api('background_status'); renderBg(); }, 8000);
+  if (AUTO === 'preview') preview();
+  if (S.settings.check_updates !== false) setTimeout(async () => { try { S.upd = await api('check_update', false); renderUpd(); } catch {} }, 1500);
+})();
+</script>
+</body>
+</html>

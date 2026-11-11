@@ -1,0 +1,11 @@
+# Only the app's source goes in the repo. Personal data (settings, caches, screenshots,
+# logs, the portable copy) and the old Python version stay local.
+/*
+!/.gitignore
+!/README.md
+!/LICENSE
+!/release.ps1
+!/installer/
+!/rust/
+/rust/target/
+/rust/gen/
