@@ -1,8 +1,9 @@
-//! The app window (Tauri + WebView2, page in ui/index.html) and the tray icon for
-//! background mode. The page calls `call(method, args)`; images come from the thumb:// scheme.
+//! The app: one process with the window (Tauri + WebView2, page in ui/index.html), the tray
+//! icon and background auto-sort. The page calls `call(method, args)`; images come from the
+//! thumb:// scheme. Launching the app again just brings this window forward.
 use crate::ocr::{self, cache_key};
-use crate::{background, claude, integration, reports, rules, settings, sorter, tools, vision};
-use once_cell::sync::Lazy;
+use crate::{activity, background, claude, integration, reports, rules, settings, sorter, tools, vision};
+use once_cell::sync::{Lazy, OnceCell};
 use serde_json::{json, Map, Value};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -10,7 +11,7 @@ use std::sync::Mutex;
 use tauri::http::{Response, StatusCode};
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, TrayIconBuilder, TrayIconEvent};
-use tauri::{RunEvent, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, RunEvent, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
 
 const PALETTE: [&str; 8] = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"];
 
@@ -32,7 +33,20 @@ fn folder() -> PathBuf {
 fn allowed(p: &Path) -> bool {
     let Ok(c) = p.canonicalize() else { return false };
     let inside = |root: &Path| root.canonicalize().map(|r| c.starts_with(r)).unwrap_or(false);
-    c.is_file() && (inside(&folder()) || inside(&settings::APP_DIR))
+    c.is_file()
+        && (inside(&folder()) || inside(&settings::APP_DIR) || settings::load().folders.iter().any(|f| inside(Path::new(&f.path))))
+}
+
+/// The open folder plus every watched one, without repeats.
+fn all_folders() -> Vec<PathBuf> {
+    let mut out = vec![folder()];
+    for f in settings::load().folders {
+        let p = PathBuf::from(&f.path);
+        if p.is_dir() && !out.iter().any(|o| o.to_string_lossy().eq_ignore_ascii_case(&p.to_string_lossy())) {
+            out.push(p);
+        }
+    }
+    out
 }
 
 fn s_arg(a: &[Value], i: usize) -> String {
@@ -60,8 +74,10 @@ fn rules_json() -> Value {
 }
 
 fn item_json(folder: &Path, p: &Path, reason: String, text: &str) -> Value {
+    let root = if p.starts_with(folder) { folder.to_path_buf() } else { settings::root_of(p).unwrap_or_else(|| folder.to_path_buf()) };
     json!({"p": p.to_string_lossy(), "n": p.file_name().unwrap_or_default().to_string_lossy(),
-           "c": sorter::category_of(folder, p).unwrap_or_else(|| "Unsorted".into()),
+           "c": sorter::category_of(&root, p).unwrap_or_else(|| "Unsorted".into()),
+           "f": root.file_name().unwrap_or_default().to_string_lossy(),
            "r": reason, "t": text.chars().take(700).collect::<String>()})
 }
 
@@ -91,7 +107,7 @@ fn run_job(kind: &str, a: &Value, f: &Path, progress: ocr::Progress, log: ocr::L
                 }
                 None => sorter::make_plan(f, progress, log, true),
             };
-            json!({"moved": sorter::apply_plan(f, &plan).len()})
+            json!({"moved": sorter::apply_plan(f, &plan, "you").len()})
         }
         "browse" => {
             let files = sorter::all_images(f);
@@ -104,9 +120,13 @@ fn run_job(kind: &str, a: &Value, f: &Path, progress: ocr::Progress, log: ocr::L
         }
         "search" => {
             let q = a["q"].as_str().unwrap_or("");
+            let folders = if a["all"].as_bool() == Some(true) { all_folders() } else { vec![f.to_path_buf()] };
+            let mut hits = Vec::new();
+            for root in &folders {
+                hits.extend(sorter::search(root, q, progress, log));
+            }
             let cache = ocr::load_cache();
-            let hits = sorter::search(f, q, progress, log);
-            json!({"items": hits.iter().map(|(p, snip)| item_json(f, p, format!("…{snip}…"), cache.get(&cache_key(p)).map(String::as_str).unwrap_or(""))).collect::<Vec<_>>()})
+            json!({"folders": folders.len(), "items": hits.iter().map(|(p, snip)| item_json(f, p, format!("…{snip}…"), cache.get(&cache_key(p)).map(String::as_str).unwrap_or(""))).collect::<Vec<_>>()})
         }
         "undo" => {
             let (n, had) = sorter::undo_last();
@@ -196,45 +216,49 @@ fn save_settings(values: &Value) -> Value {
     if changes.remove("clear_claude_key").and_then(|v| v.as_bool()).unwrap_or(false) {
         changes.insert("claude_api_key".into(), json!(""));
     }
-    let old = settings::load();
     let s = settings::update(&changes);
-    integration::apply(&s);
-    if s.auto_mode != "off" {
+    applied(&s)
+}
+
+/// After settings change: update Windows hooks, the tray icon and wake auto-sort.
+fn applied(s: &settings::Settings) -> Value {
+    integration::apply(s);
+    if s.auto_on() {
         integration::remove_daily_task();
     }
-    if s.auto_mode == "off" {
-        background::request_stop();
-    } else if old.show_tray_icon != s.show_tray_icon && background::is_running() {
-        // restart so the tray icon appears/disappears
-        background::request_stop();
-        std::thread::sleep(std::time::Duration::from_millis(1500));
-        start_background();
+    if let Some(app) = APP.get() {
+        let _ = app.run_on_main_thread(refresh_tray);
     }
+    background::wake();
     json!({"settings": public_settings(), "background": background::status_json(), "warnings": []})
 }
 
-fn start_background() -> Value {
-    if !background::is_running() {
-        integration::spawn(&["--tray"]);
-        for _ in 0..20 {
-            std::thread::sleep(std::time::Duration::from_millis(250));
-            if background::is_running() {
-                break;
-            }
-        }
-    }
-    background::status_json()
+fn same_path(a: &str, b: &str) -> bool {
+    a.trim_end_matches('\\').eq_ignore_ascii_case(b.trim_end_matches('\\'))
 }
 
-fn stop_background() -> Value {
-    background::request_stop();
-    for _ in 0..20 {
-        std::thread::sleep(std::time::Duration::from_millis(250));
-        if !background::is_running() {
-            break;
-        }
+/// Add a watched folder (or change its mode if it's already there).
+fn set_folder_mode(path: &str, mode: &str) -> Result<Value, String> {
+    if !Path::new(path).is_dir() {
+        return Err(format!("Folder not found: {path}"));
     }
-    background::status_json()
+    let mut s = settings::load();
+    match s.folders.iter_mut().find(|f| same_path(&f.path, path)) {
+        Some(f) => f.mode = mode.to_string(),
+        None => s.folders.push(settings::FolderCfg { path: path.to_string(), mode: mode.to_string() }),
+    }
+    settings::save(&s).map_err(|e| e.to_string())?;
+    let name = Path::new(path).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| path.to_string());
+    activity::info(&format!("{name}: {}", match mode { "instant" => "now sorted instantly", "interval" => "now sorted every few hours", _ => "auto-sort turned off" }));
+    Ok(applied(&s))
+}
+
+fn remove_folder(path: &str) -> Value {
+    let mut s = settings::load();
+    s.folders.retain(|f| !same_path(&f.path, path));
+    let _ = settings::save(&s);
+    activity::info(&format!("Stopped watching {}", Path::new(path).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| path.to_string())));
+    applied(&s)
 }
 
 fn dispatch(method: &str, a: &[Value]) -> Result<Value, String> {
@@ -326,8 +350,42 @@ fn dispatch(method: &str, a: &[Value]) -> Result<Value, String> {
             let _ = open::that_detached(format!("https://github.com/{}/releases/latest", crate::updater::REPO));
             Value::Null
         }
-        "start_background" => start_background(),
-        "stop_background" => stop_background(),
+        // older page versions called these Start/Stop; now they resume/pause auto-sort
+        "start_background" | "resume" => {
+            background::set_paused(false);
+            background::status_json()
+        }
+        "stop_background" | "pause" => {
+            background::set_paused(true);
+            background::status_json()
+        }
+        "sort_all_now" => {
+            let n = background::WORKER.get().map(|w| w.sort_all_now()).unwrap_or(0);
+            json!(n)
+        }
+        "add_folder" => match rfd::FileDialog::new().set_directory(folder()).pick_folder() {
+            Some(p) => set_folder_mode(&p.to_string_lossy(), a.get(0).and_then(Value::as_str).unwrap_or("instant"))?,
+            None => Value::Null,
+        },
+        "set_folder_mode" => set_folder_mode(&s_arg(a, 0), &s_arg(a, 1))?,
+        "remove_folder" => remove_folder(&s_arg(a, 0)),
+        "activity" => {
+            let limit = a.first().and_then(Value::as_u64).unwrap_or(1500) as usize;
+            json!({"entries": activity::recent(limit), "status": background::status_json()})
+        }
+        "undo_one" => {
+            sorter::undo_one(Path::new(&s_arg(a, 0)), Path::new(&s_arg(a, 1)))?;
+            Value::Null
+        }
+        "set_zoom" => {
+            let z = a.first().and_then(Value::as_f64).unwrap_or(1.0).clamp(0.6, 1.6);
+            let z = (z * 100.0).round() / 100.0;
+            settings::update(&[("ui_zoom".to_string(), json!(z))].into_iter().collect());
+            if let Some(w) = APP.get().and_then(|app| app.get_webview_window("main")) {
+                let _ = w.set_zoom(z);
+            }
+            json!(z)
+        }
         "library_snapshot" => {
             let snap: Value = std::fs::read_to_string(library_file()).ok().and_then(|s| serde_json::from_str(&s).ok()).unwrap_or(json!({}));
             if snap["folder"].as_str() == Some(folder().to_string_lossy().as_ref()) { snap } else { json!({"items": []}) }
@@ -373,119 +431,226 @@ fn image_response(uri: &str) -> Response<Vec<u8>> {
     }
 }
 
-pub fn run_gui(start_folder: Option<PathBuf>, auto_preview: bool) {
+// ---------- the app: one process with the window, tray icon and auto-sort ----------
+
+static APP: OnceCell<AppHandle> = OnceCell::new();
+
+fn notify(title: &str, body: &str) {
+    let _ = notify_rust::Notification::new().summary(title).body(body).appname("Screenshot Sorter").show();
+}
+
+fn geometry_file() -> PathBuf {
+    settings::app_file("window_state.json")
+}
+
+/// Remember where the window was, to open it there next time.
+fn save_geometry(w: &WebviewWindow) {
+    let max = w.is_maximized().unwrap_or(false);
+    let mut g: Value = std::fs::read_to_string(geometry_file()).ok().and_then(|s| serde_json::from_str(&s).ok()).unwrap_or(json!({}));
+    g["max"] = json!(max);
+    if !max && !w.is_minimized().unwrap_or(false) {
+        if let (Ok(p), Ok(sz)) = (w.outer_position(), w.inner_size()) {
+            g["x"] = json!(p.x);
+            g["y"] = json!(p.y);
+            g["w"] = json!(sz.width);
+            g["h"] = json!(sz.height);
+        }
+    }
+    let _ = settings::write_atomic(&geometry_file(), g.to_string().as_bytes());
+}
+
+/// Show the window (create it if needed). `preview`: start a preview of the open folder.
+pub fn open_window(app: &AppHandle, preview: bool) {
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+        let f = serde_json::to_string(&folder().to_string_lossy()).unwrap_or_default();
+        let _ = w.eval(&format!("window.__switchFolder && window.__switchFolder({f}, {preview})"));
+        return;
+    }
+    let mut b = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+        .title("Screenshot Sorter")
+        .min_inner_size(760.0, 520.0)
+        .visible(false)
+        .background_color(tauri::webview::Color(15, 17, 21, 255));
+    if preview {
+        b = b.initialization_script("window.__AUTO = 'preview';");
+    }
+    // a size that fits this screen: up to 1320x860, at most ~90% of it
+    let (mut lw, mut lh) = (1320.0_f64, 860.0_f64);
+    if let Ok(Some(m)) = app.primary_monitor() {
+        let sz = m.size().to_logical::<f64>(m.scale_factor());
+        lw = lw.min(sz.width * 0.9);
+        lh = lh.min(sz.height * 0.88);
+    }
+    b = b.inner_size(lw, lh).center();
+    let Ok(w) = b.build() else { return };
+    // put it back where it was last time, if that spot is still on a screen
+    let g: Value = std::fs::read_to_string(geometry_file()).ok().and_then(|s| serde_json::from_str(&s).ok()).unwrap_or(json!({}));
+    if let (Some(x), Some(y), Some(gw), Some(gh)) = (g["x"].as_i64(), g["y"].as_i64(), g["w"].as_u64(), g["h"].as_u64()) {
+        let on_screen = w.available_monitors().unwrap_or_default().iter().any(|m| {
+            let (p, s) = (m.position(), m.size());
+            let (cx, cy) = (x as i32 + 120, y as i32 + 40);
+            cx >= p.x && cy >= p.y && cx < p.x + s.width as i32 && cy < p.y + s.height as i32
+        });
+        if on_screen && gw >= 400 && gh >= 300 {
+            let _ = w.set_size(tauri::PhysicalSize::new(gw as u32, gh as u32));
+            let _ = w.set_position(tauri::PhysicalPosition::new(x as i32, y as i32));
+        }
+    }
+    if g["max"].as_bool() == Some(true) {
+        let _ = w.maximize();
+    }
+    let _ = w.set_zoom(settings::load().ui_zoom);
+    let w2 = w.clone();
+    w.on_window_event(move |ev| {
+        if let WindowEvent::CloseRequested { .. } = ev {
+            save_geometry(&w2);
+        }
+    });
+    let _ = w.show();
+    let _ = w.set_focus();
+}
+
+fn refresh_tray() {
+    if let Some(app) = APP.get() {
+        if let Some(t) = app.tray_by_id("tray") {
+            let _ = t.set_tooltip(Some(background::summary()));
+            let _ = t.set_visible(settings::load().show_tray_icon);
+        }
+    }
+}
+
+/// Another launch of the app (Start menu, Explorer menu, login) ends up here.
+fn second_launch(app: &AppHandle, argv: Vec<String>) {
+    let args: Vec<&str> = argv.iter().skip(1).map(String::as_str).collect();
+    match args.first() {
+        Some(&"--tray") => {}
+        Some(&"--gui-folder") => {
+            if let Some(f) = args.get(1).map(PathBuf::from).filter(|f| f.is_dir()) {
+                *FOLDER.lock().unwrap() = f;
+            }
+            open_window(app, true);
+        }
+        _ => open_window(app, false),
+    }
+}
+
+fn build_tray(app: &tauri::App) -> tauri::Result<()> {
+    let open_i = MenuItem::with_id(app, "open", "Open Screenshot Sorter", true, None::<&str>)?;
+    let sort_i = MenuItem::with_id(app, "sort", "Sort now", true, None::<&str>)?;
+    let pause_i = CheckMenuItem::with_id(app, "pause", "Pause auto-sort", true, background::is_paused(), None::<&str>)?;
+    let undo_i = MenuItem::with_id(app, "undo", "Undo last sort", true, None::<&str>)?;
+    let upd_i = MenuItem::with_id(app, "update", "Check for updates", true, None::<&str>)?;
+    let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let sep = PredefinedMenuItem::separator(app)?;
+    let menu = Menu::with_items(app, &[&open_i, &sort_i, &pause_i, &undo_i, &upd_i, &sep, &quit_i])?;
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?;
+    let _ = PAUSE_ITEM.set(pause_i.clone());
+    TrayIconBuilder::with_id("tray")
+        .icon(icon)
+        .tooltip(background::summary())
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(move |app, ev| match ev.id().as_ref() {
+            "open" => open_window(app, false),
+            "sort" => {
+                std::thread::spawn(|| {
+                    if let Some(w) = background::WORKER.get() {
+                        if w.sort_all_now() == 0 {
+                            notify("Screenshot Sorter", "Nothing new to sort.");
+                        }
+                    }
+                });
+            }
+            "pause" => background::set_paused(!background::is_paused()),
+            "undo" => {
+                let (n, had) = sorter::undo_last();
+                notify("Screenshot Sorter", &if had { format!("Moved {n} file(s) back.") } else { "Nothing to undo.".into() });
+            }
+            "update" => {
+                let app = app.clone();
+                std::thread::spawn(move || {
+                    let v = crate::updater::check(true);
+                    if let Some(e) = v["error"].as_str() {
+                        notify("Couldn't check for updates", e);
+                    } else if v["available"] == true {
+                        notify("Update available", &format!("Version {} is out.", v["latest"].as_str().unwrap_or("")));
+                        let a2 = app.clone();
+                        let _ = app.run_on_main_thread(move || open_window(&a2, false));
+                    } else {
+                        notify("Screenshot Sorter", &format!("You have the newest version ({}).", crate::updater::VERSION));
+                    }
+                });
+            }
+            "quit" => app.exit(0),
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, ev| {
+            if let TrayIconEvent::DoubleClick { button: MouseButton::Left, .. } = ev {
+                open_window(tray.app_handle(), false);
+            }
+        })
+        .build(app)?;
+    if let Some(t) = app.tray_by_id("tray") {
+        let _ = t.set_visible(settings::load().show_tray_icon);
+    }
+    Ok(())
+}
+
+static PAUSE_ITEM: OnceCell<CheckMenuItem<tauri::Wry>> = OnceCell::new();
+
+/// The app. `show_window` false = start in the background (at login).
+pub fn run_app(show_window: bool, start_folder: Option<PathBuf>, preview: bool) {
     if let Some(f) = start_folder.filter(|f| f.is_dir()) {
         *FOLDER.lock().unwrap() = f;
     }
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| second_launch(app, argv)))
         .invoke_handler(tauri::generate_handler![call])
         .register_asynchronous_uri_scheme_protocol("thumb", |_ctx, req, responder| {
             let uri = req.uri().to_string();
             std::thread::spawn(move || responder.respond(image_response(&uri)));
         })
         .setup(move |app| {
-            let mut b = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-                .title("Screenshot Sorter")
-                .inner_size(1320.0, 860.0)
-                .min_inner_size(980.0, 640.0)
-                .background_color(tauri::webview::Color(15, 17, 21, 255));
-            if auto_preview {
-                b = b.initialization_script("window.__AUTO = 'preview';");
+            let _ = APP.set(app.handle().clone());
+            let h = app.handle().clone();
+            background::claim_app(move || h.exit(0));
+            let _ = background::ON_CHANGE.set(Box::new(|| {
+                if let Some(app) = APP.get() {
+                    let _ = app.run_on_main_thread(|| {
+                        refresh_tray();
+                        if let Some(i) = PAUSE_ITEM.get() {
+                            let _ = i.set_checked(background::is_paused());
+                        }
+                    });
+                }
+            }));
+            build_tray(app)?;
+            background::start(Some(Box::new(notify)));
+            if show_window {
+                open_window(app.handle(), preview);
             }
-            b.build()?;
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("could not start the window");
-}
-
-// ---------- tray (background mode with icon) ----------
-
-fn notify(title: &str, body: &str) {
-    let _ = notify_rust::Notification::new().summary(title).body(body).appname("Screenshot Sorter").show();
-}
-
-pub fn run_tray() {
-    let worker = std::sync::Arc::new(background::Worker::new(Some(Box::new(notify))));
-    let app = tauri::Builder::default()
-        .setup({
-            let worker = worker.clone();
-            move |app| {
-                let open_i = MenuItem::with_id(app, "open", "Open Screenshot Sorter", true, None::<&str>)?;
-                let sort_i = MenuItem::with_id(app, "sort", "Sort now", true, None::<&str>)?;
-                let pause_i = CheckMenuItem::with_id(app, "pause", "Pause", true, false, None::<&str>)?;
-                let undo_i = MenuItem::with_id(app, "undo", "Undo last sort", true, None::<&str>)?;
-                let upd_i = MenuItem::with_id(app, "update", "Check for updates", true, None::<&str>)?;
-                let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-                let sep = PredefinedMenuItem::separator(app)?;
-                let menu = Menu::with_items(app, &[&open_i, &sort_i, &pause_i, &undo_i, &upd_i, &sep, &quit_i])?;
-                let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?;
-                let w = worker.clone();
-                TrayIconBuilder::with_id("tray")
-                    .icon(icon)
-                    .tooltip("Screenshot Sorter")
-                    .menu(&menu)
-                    .show_menu_on_left_click(false)
-                    .on_menu_event(move |app, ev| match ev.id().as_ref() {
-                        "open" => integration::spawn(&[]),
-                        "sort" => {
-                            let w = w.clone();
-                            std::thread::spawn(move || {
-                                let f = settings::default_folder();
-                                if w.sort_files(&f, &sorter::loose_images(&f)) == 0 {
-                                    notify("Screenshot Sorter", "Nothing new to sort.");
-                                }
-                            });
-                        }
-                        "pause" => {
-                            let p = !w.paused.load(std::sync::atomic::Ordering::Relaxed);
-                            w.paused.store(p, std::sync::atomic::Ordering::Relaxed);
-                        }
-                        "undo" => {
-                            let (n, had) = sorter::undo_last();
-                            notify("Screenshot Sorter", &if had { format!("Moved {n} file(s) back.") } else { "Nothing to undo.".into() });
-                        }
-                        "update" => {
-                            std::thread::spawn(|| {
-                                let v = crate::updater::check(true);
-                                if let Some(e) = v["error"].as_str() {
-                                    notify("Couldn't check for updates", e);
-                                } else if v["available"] == true {
-                                    notify("Update available", &format!("Version {} is out. Opening Screenshot Sorter...", v["latest"].as_str().unwrap_or("")));
-                                    integration::spawn(&[]);
-                                } else {
-                                    notify("Screenshot Sorter", &format!("You have the newest version ({}).", crate::updater::VERSION));
-                                }
-                            });
-                        }
-                        "quit" => {
-                            w.signal_stop();
-                            app.exit(0);
-                        }
-                        _ => {}
-                    })
-                    .on_tray_icon_event(|tray, ev| {
-                        if let TrayIconEvent::DoubleClick { button: MouseButton::Left, .. } = ev {
-                            let _ = tray.app_handle();
-                            integration::spawn(&[]);
-                        }
-                    })
-                    .build(app)?;
-                // watcher thread; when it stops (Quit or Stop from the window) the app exits
-                let handle = app.handle().clone();
-                let w = worker.clone();
-                std::thread::spawn(move || {
-                    w.run();
-                    handle.exit(0);
-                });
-                Ok(())
-            }
-        })
         .build(tauri::generate_context!())
-        .expect("could not start the tray icon");
-    app.run(|_, ev| {
-        if let RunEvent::ExitRequested { api, code: None, .. } = ev {
-            api.prevent_exit(); // no windows is normal for the tray
+        .expect("could not start Screenshot Sorter");
+    app.run(|app, ev| match ev {
+        // closing the window keeps auto-sort running in the background; with nothing to do, quit
+        RunEvent::ExitRequested { api, code: None, .. } => {
+            if settings::load().auto_on() {
+                api.prevent_exit();
+            }
         }
+        RunEvent::Exit => {
+            if let Some(w) = app.get_webview_window("main") {
+                save_geometry(&w);
+            }
+            if let Some(w) = background::WORKER.get() {
+                w.shutdown();
+            }
+        }
+        _ => {}
     });
 }

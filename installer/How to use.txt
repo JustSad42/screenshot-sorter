@@ -19,9 +19,15 @@ SETTINGS   Auto-sort: Instantly / Every few hours / Off, tray icon or hidden, st
            month folders, readable names, Arabic text, optional Claude for leftovers, theme,
            and update checks.
 
-Auto-sort is off until you turn it on in Settings. It then runs in the background (tray icon
-near the clock, or hidden) and starts when you log in. Undo (in the app or the tray menu)
-reverses the last sort, move or rename.
+FOLDERS    Click the folder at the top to switch between folders or watch another one.
+           In Settings each watched folder is sorted Instantly, Every few hours, or Off.
+ACTIVITY   Everything auto-sort and you have done: where each file went and why, with Undo
+           and Show buttons. Files you put back with Undo are left alone by auto-sort.
+
+Auto-sort is off until you turn it on for a folder. The app is a single program: closing the
+window keeps auto-sort running in the tray (or hidden); opening it again brings the window
+back. Quit from the tray icon. Undo (in the app or the tray menu) reverses the last sort.
+Window too big or small? Ctrl + / Ctrl - / Ctrl 0, or Settings > Windows > Size.
 
 Updates: the app checks GitHub once a day and shows "Update available" when there is a new
 version. "Update now" downloads and installs it, then reopens the app. Your settings stay.

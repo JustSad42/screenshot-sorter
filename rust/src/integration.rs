@@ -76,7 +76,7 @@ pub fn remove_daily_task() -> bool {
 }
 
 pub fn apply(s: &Settings) {
-    set_start_at_login(s.start_tray_at_login && s.auto_mode != "off");
+    set_start_at_login(s.start_tray_at_login && s.auto_on());
     set_explorer_menu(s.explorer_menu);
 }
 

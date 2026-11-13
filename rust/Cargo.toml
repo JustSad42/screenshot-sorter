@@ -1,6 +1,6 @@
 [package]
 name = "screenshot-sorter"
-version = "2.0.0"
+version = "2.1.0"
 edition = "2021"
 description = "Sorts screenshots into folders by what's in them"
 
@@ -28,6 +28,8 @@ sha2 = "0.10"
 base64 = "0.22"
 rfd = "0.15"
 notify-rust = "4"
+notify = { version = "8", default-features = false }
+tauri-plugin-single-instance = "2"
 open = "5"
 urlencoding = "2"
 once_cell = "1"

@@ -1,12 +1,13 @@
 //! Screenshot Sorter
 //!   Screenshot Sorter.exe                  the app window
-//!   Screenshot Sorter.exe --tray           background auto-sort (tray icon or hidden)
+//!   Screenshot Sorter.exe --tray           start in the background (auto-sort; tray icon or hidden)
 //!   Screenshot Sorter.exe --gui-folder P   window on folder P, previewing it (Explorer menu)
 //!   Screenshot Sorter.exe --setup          apply settings to Windows, start background sorting
 //!   Screenshot Sorter.exe --apply [--folder P] | --undo | --search TEXT | --compress avif|webp   command line
 //!   Screenshot Sorter.exe --version | --check-update | --update | --stop | --remove-integration
 #![windows_subsystem = "windows"]
 
+mod activity;
 mod background;
 mod claude;
 mod gui;
@@ -138,7 +139,7 @@ fn cli(args: &[String]) {
             out(&format!("  {c:<40} {n:>5}"));
         }
         if args.iter().any(|a| a == "--apply") {
-            let done = sorter::apply_plan(&folder, &plan);
+            let done = sorter::apply_plan(&folder, &plan, "you");
             out(&format!("\nMoved {} file(s).", done.len()));
         } else {
             out("\nDry run - nothing moved. Run with --apply to move files.");
@@ -156,13 +157,18 @@ fn main() {
             let s = settings::load();
             integration::apply(&s);
             integration::remove_daily_task();
-            if s.auto_mode != "off" && !background::is_running() {
+            if s.auto_on() && !background::is_running() {
                 integration::spawn(&["--tray"]);
             }
         }
-        Some("--tray") => background::main(),
-        Some("--gui-folder") => gui::run_gui(args.get(1).map(PathBuf::from), true),
+        Some("--tray") => {
+            // at login: only start if some folder is sorted in the background
+            if settings::load().auto_on() {
+                gui::run_app(false, None, false);
+            }
+        }
+        Some("--gui-folder") => gui::run_app(true, args.get(1).map(PathBuf::from), true),
         Some(_) => cli(&args),
-        None => gui::run_gui(None, false),
+        None => gui::run_app(true, None, false),
     }
 }

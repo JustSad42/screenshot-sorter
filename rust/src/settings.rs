@@ -30,9 +30,20 @@ pub fn log_dir() -> PathBuf {
 
 pub const DEFAULT_RULES: &str = include_str!("../categories.json");
 
+/// A folder sorted in the background. mode: "instant" | "interval" | "off"
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(default)]
+pub struct FolderCfg {
+    pub path: String,
+    pub mode: String,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default)]
 pub struct Settings {
+    /// folders sorted in the background (`folder` is only the one open in the window)
+    pub folders: Vec<FolderCfg>,
+    pub ui_zoom: f64,
     pub folder: String,
     pub month_folders: bool,
     pub rename_files: bool,
@@ -57,6 +68,8 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Settings {
+            folders: vec![],
+            ui_zoom: 1.0,
             folder: String::new(),
             month_folders: false,
             rename_files: false,
@@ -79,10 +92,51 @@ impl Default for Settings {
 }
 
 pub fn load() -> Settings {
-    std::fs::read_to_string(settings_file())
+    let mut s: Settings = std::fs::read_to_string(settings_file())
         .ok()
         .and_then(|s| serde_json::from_str(s.trim_start_matches('\u{feff}')).ok())
-        .unwrap_or_default()
+        .unwrap_or_default();
+    // older versions had one folder with one auto-sort mode
+    if s.folders.is_empty() && !s.folder.is_empty() && !s.extra.contains_key("folders_migrated") {
+        s.folders.push(FolderCfg { path: s.folder.clone(), mode: s.auto_mode.clone() });
+        s.extra.insert("folders_migrated".into(), Value::Bool(true));
+        let _ = save(&s);
+    }
+    if !(0.5..=2.0).contains(&s.ui_zoom) {
+        s.ui_zoom = 1.0;
+    }
+    s
+}
+
+impl Settings {
+    /// Folders sorted in the background right now: (path, "instant" | "interval")
+    pub fn active_folders(&self) -> Vec<(PathBuf, String)> {
+        self.folders
+            .iter()
+            .filter(|f| (f.mode == "instant" || f.mode == "interval") && Path::new(&f.path).is_dir())
+            .map(|f| (PathBuf::from(&f.path), f.mode.clone()))
+            .collect()
+    }
+    pub fn auto_on(&self) -> bool {
+        !self.active_folders().is_empty()
+    }
+}
+
+/// The watched (or open) folder that a path is inside, if any.
+pub fn root_of(p: &Path) -> Option<PathBuf> {
+    let s = load();
+    let lower = p.to_string_lossy().to_lowercase();
+    s.folders
+        .iter()
+        .map(|f| f.path.clone())
+        .chain(std::iter::once(s.folder.clone()))
+        .filter(|r| !r.is_empty())
+        .filter(|r| {
+            let rl = r.trim_end_matches('\\').to_lowercase();
+            lower.len() > rl.len() && lower.starts_with(&rl) && lower[rl.len()..].starts_with('\\')
+        })
+        .max_by_key(|r| r.len())
+        .map(PathBuf::from)
 }
 
 pub fn save(s: &Settings) -> std::io::Result<()> {

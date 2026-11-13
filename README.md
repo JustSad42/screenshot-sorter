@@ -36,8 +36,16 @@ JPEG XL screenshots, install the free AV1 and JPEG XL extensions from the Micros
   - Lossless WebP keeps every pixel the same.
 - **Insights:** counts by category and month, plus an HTML report with extra League of Legends
   and YouTube Studio numbers.
-- **Background:** auto-sort, either instantly or every few hours, from the tray icon or hidden.
-  Explorer also gets a "Sort with Screenshot Sorter" right-click menu.
+- **Several folders:** watch as many folders as you like. Each one is sorted the moment a
+  screenshot lands (using Windows change notifications) or every few hours.
+- **Activity:** a live log of every move, whether by auto-sort or by you. It shows where each
+  file went and why, has filters, and lets you undo any single move. A file you put back stays
+  put.
+- **One app:** the window, tray icon and auto-sort run as a single process. Opening it again
+  brings the window forward, and closing the window keeps auto-sort running.
+- **Fits any screen:** the window opens at a size that fits your screen and remembers its size
+  and position. The layout adapts to narrow windows, and you can zoom with Ctrl + / Ctrl − / Ctrl 0.
+- **Explorer menu:** a "Sort with Screenshot Sorter" right-click menu on folders.
 
 Auto-sort is off on a new install until you turn it on in Settings.
 
@@ -83,7 +91,8 @@ Installed copies pick up the new release by themselves.
 | `rust/src/tools.rs` | Recycle Bin, AVIF/WebP conversion, thumbnails |
 | `rust/src/reports.rs` | HTML report |
 | `rust/src/claude.rs` | Optional Claude step for leftovers (off by default) |
-| `rust/src/background.rs` | Background auto-sort |
+| `rust/src/background.rs` | Background auto-sort for several folders (change notifications + interval sweeps) |
+| `rust/src/activity.rs` | Activity log (`logs/activity.jsonl`) |
 | `rust/src/integration.rs` | Start at login and the Explorer menu (per-user registry) |
 | `rust/src/updater.rs` | Update check and install from GitHub releases |
 | `installer/setup.iss` | Inno Setup installer |

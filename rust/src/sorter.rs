@@ -194,7 +194,11 @@ impl Item {
                     seen.push(w);
                 }
             }
-            seen.join(", ")
+            if seen.is_empty() && !self.hits.is_empty() {
+                "text pattern".to_string()
+            } else {
+                seen.join(", ")
+            }
         } else {
             self.how.clone()
         }
@@ -293,22 +297,39 @@ fn new_log() -> PathBuf {
     settings::log_dir().join(format!("moves_{}.csv", Local::now().format("%Y%m%d_%H%M%S_%6f")))
 }
 
-/// Moves files, keeps the text cache in step and writes an undo log. -> [(from, to)]
-pub fn move_files(pairs: Vec<(PathBuf, PathBuf)>) -> Vec<(PathBuf, PathBuf)> {
+/// One move at a time, whether it comes from auto-sort or the window.
+static MOVE_LOCK: Lazy<std::sync::Mutex<()>> = Lazy::new(|| std::sync::Mutex::new(()));
+
+/// A planned move: (from, to, category, why)
+pub type Planned = (PathBuf, PathBuf, String, String);
+
+/// Moves files, keeps the text cache in step, writes an undo log and the activity log.
+/// kind: "move" | "rename"; by: "auto" | "you". -> [(from, to)]
+pub fn move_files(pairs: Vec<Planned>, kind: &str, by: &str) -> Vec<(PathBuf, PathBuf)> {
+    let _g = MOVE_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let log_path = new_log();
+    let batch = log_path.file_stem().unwrap_or_default().to_string_lossy().to_string();
     let mut cache = ocr::load_cache();
     let mut done = Vec::new();
-    for (src, dest) in pairs {
+    let mut logged: Vec<(PathBuf, PathBuf, String, String)> = Vec::new();
+    for (src, dest, cat, why) in pairs {
         if !src.exists() || src == dest {
             continue;
         }
         let old_key = ocr::cache_key(&src);
         let dest = unique_dest(&dest);
-        if move_file(&src, &dest).is_ok() {
-            ocr::carry(&mut cache, &old_key, &dest);
-            done.push((src, dest));
+        match move_file(&src, &dest) {
+            Ok(()) => {
+                ocr::carry(&mut cache, &old_key, &dest);
+                logged.push((src.clone(), dest.clone(), cat, why));
+                done.push((src, dest));
+            }
+            Err(e) => crate::activity::error(&format!("Couldn't move {}: {e}", src.file_name().unwrap_or_default().to_string_lossy()), Some(&src)),
         }
     }
+    let items: Vec<crate::activity::Moved> =
+        logged.iter().map(|(f, t, c, w)| crate::activity::Moved { from: f, to: t, category: c, why: w }).collect();
+    crate::activity::moved(kind, by, &batch, &items);
     if !done.is_empty() {
         if let Ok(mut w) = csv::Writer::from_path(&log_path) {
             let _ = w.write_record(["from", "to"]);
@@ -322,9 +343,16 @@ pub fn move_files(pairs: Vec<(PathBuf, PathBuf)>) -> Vec<(PathBuf, PathBuf)> {
     done
 }
 
-pub fn apply_plan(folder: &Path, plan: &[Item]) -> Vec<(PathBuf, PathBuf)> {
+/// by: "auto" (background) or "you"
+pub fn apply_plan(folder: &Path, plan: &[Item], by: &str) -> Vec<(PathBuf, PathBuf)> {
     let s = settings::load();
-    move_files(plan.iter().map(|it| (it.path.clone(), target_path(folder, &it.path, &it.category, &it.text, &s))).collect())
+    move_files(
+        plan.iter()
+            .map(|it| (it.path.clone(), target_path(folder, &it.path, &it.category, &it.text, &s), it.category.clone(), it.reason()))
+            .collect(),
+        "move",
+        by,
+    )
 }
 
 /// A correction: move files into another category folder.
@@ -336,9 +364,12 @@ pub fn move_to_category(folder: &Path, paths: &[PathBuf], category: &str) -> Vec
             .iter()
             .map(|p| {
                 let t = cache.get(&ocr::cache_key(p)).cloned().unwrap_or_default();
-                (p.clone(), target_path(folder, p, category, &t, &s))
+                let root = settings::root_of(p).unwrap_or_else(|| folder.to_path_buf());
+                (p.clone(), target_path(&root, p, category, &t, &s), category.to_string(), "moved by you".to_string())
             })
             .collect(),
+        "move",
+        "you",
     )
 }
 
@@ -361,9 +392,33 @@ pub fn rename_existing(folder: &Path, progress: Progress, log: Log) -> Vec<(Path
             continue;
         }
         let t = texts.get(p).cloned().unwrap_or_default();
-        pairs.push((p.clone(), p.with_file_name(readable_name(p, &cat, &t, &s))));
+        pairs.push((p.clone(), p.with_file_name(readable_name(p, &cat, &t, &s)), cat, "readable name".to_string()));
     }
-    move_files(pairs)
+    move_files(pairs, "rename", "you")
+}
+
+/// Put one file back where it was (from the Activity page).
+pub fn undo_one(from: &Path, to: &Path) -> Result<(), String> {
+    let _g = MOVE_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    if !to.exists() {
+        return Err("The file isn't there any more.".into());
+    }
+    if from.exists() {
+        return Err("Another file already has its old name.".into());
+    }
+    let mut cache = ocr::load_cache();
+    let k = ocr::cache_key(to);
+    move_file(to, from).map_err(|e| e.to_string())?;
+    ocr::carry(&mut cache, &k, from);
+    ocr::save_cache(&cache);
+    if let Some(d) = to.parent() {
+        if std::fs::read_dir(d).map(|mut r| r.next().is_none()).unwrap_or(false) {
+            let _ = std::fs::remove_dir(d);
+        }
+    }
+    crate::activity::moved("undo", "you", "", &[crate::activity::Moved { from: to, to: from, category: "", why: "undone" }]);
+    crate::background::skip(&[from.to_path_buf()]);
+    Ok(())
 }
 
 /// Move everything from the most recent action back. -> (count, had_something_to_undo)
@@ -389,18 +444,25 @@ pub fn undo_last() -> (usize, bool) {
             }
         }
     }
+    let _g = MOVE_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let mut cache = ocr::load_cache();
     let mut moved = 0;
+    let mut back: Vec<(PathBuf, PathBuf)> = Vec::new();
     for (from, to) in rows.iter().rev() {
         if to.exists() && !from.exists() {
             let k = ocr::cache_key(to);
             if move_file(to, from).is_ok() {
                 ocr::carry(&mut cache, &k, from);
+                back.push((to.clone(), from.clone()));
                 moved += 1;
             }
         }
     }
     ocr::save_cache(&cache);
+    let items: Vec<crate::activity::Moved> =
+        back.iter().map(|(a, b)| crate::activity::Moved { from: a, to: b, category: "", why: "undone" }).collect();
+    crate::activity::moved("undo", "you", "", &items);
+    crate::background::skip(&back.iter().map(|(_, b)| b.clone()).collect::<Vec<_>>());
     let mut dirs: Vec<PathBuf> = rows.iter().filter_map(|(_, to)| to.parent().map(Path::to_path_buf)).collect();
     dirs.sort_by_key(|d| std::cmp::Reverse(d.components().count()));
     dirs.dedup();

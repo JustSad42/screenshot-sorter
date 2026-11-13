@@ -83,10 +83,10 @@ svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-widt
 .view{flex:1;overflow:auto;padding:20px 22px 90px;display:none}
 .view.on{display:block;animation:fade .2s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.vh{display:flex;align-items:flex-end;gap:12px;margin-bottom:14px}
+.vh{display:flex;align-items:flex-end;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .vh h1{font-size:22px;margin:0;font-weight:650;letter-spacing:-.01em}
 .vh .sub{color:var(--text-3);font-size:13px;margin-top:2px}
-.vh .actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.vh .actions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
 /* chips */
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:thin}
@@ -198,7 +198,7 @@ svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-widt
 .status{position:absolute;left:22px;bottom:14px;font-size:12px;color:var(--text-3);pointer-events:none}
 
 /* cards & forms */
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
 .box h2{font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
 .box h2 svg{stroke:var(--accent)}
@@ -265,13 +265,86 @@ input[type=range]{accent-color:var(--accent);width:160px}
 .extra{position:absolute;top:8px;right:8px;font-size:11px;font-weight:650;background:rgba(15,17,21,.65);color:#fff;border-radius:999px;padding:2px 8px}
 .meter{height:10px;border-radius:999px;background:var(--panel-2);overflow:hidden;margin:10px 0 6px}
 .meter i{display:block;height:100%;background:linear-gradient(90deg,#1baf7a,#5b5bd6)}
+/* activity */
+.act-status{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:14px;margin-bottom:16px}
+.act-status .box{padding:16px}
+.bigstate{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:650;margin:4px 0 2px}
+.bigstate .dot{width:10px;height:10px}
+.muted{color:var(--text-3);font-size:13px}
+.fold{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);min-width:0}
+.fold:first-child{border-top:0}
+.fold .p{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:550}
+.badge{font-size:11.5px;padding:2px 9px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line);color:var(--text-2);white-space:nowrap;flex:none}
+.badge.live{color:var(--good);border-color:rgba(12,163,12,.35)}
+.badge.err{color:var(--danger);border-color:rgba(208,59,59,.35)}
+.badge.you{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-soft)}
+.nums{display:flex;gap:18px;margin-top:6px}
+.nums b{display:block;font-size:24px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.nums span{color:var(--text-3);font-size:12.5px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filters select,.filters input{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:7px 10px;outline:none;max-width:100%}
+.filters input{flex:1;min-width:160px}
+.feed{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.day{font-size:11.5px;font-weight:650;color:var(--text-3);padding:9px 14px 7px;text-transform:uppercase;letter-spacing:.06em;background:var(--panel-2)}
+.day:not(:first-child){border-top:1px solid var(--line)}
+.ev{display:flex;align-items:center;gap:12px;padding:8px 14px;border-top:1px solid var(--line);min-width:0}
+.day+.ev{border-top:0}
+.ev .th{width:64px;height:40px;border-radius:7px;object-fit:cover;background:var(--panel-2);flex:none;cursor:zoom-in}
+.ev .ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:var(--panel-2);flex:none;color:var(--text-3)}
+.ev .ic.err{background:#fde8e8;color:var(--danger)}
+.ev .bd{flex:1;min-width:0}
+.ev .l1{display:flex;gap:8px;align-items:center;min-width:0}
+.ev .nm{font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ev .l2{font-size:12.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev .l2 .sw{display:inline-block;width:8px;height:8px;border-radius:3px;margin:0 4px 0 2px}
+.ev .tm{font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums;flex:none}
+.ev .acts{display:flex;gap:4px;opacity:0;transition:opacity .15s;flex:none}
+.ev:hover .acts{opacity:1}
+.ev.info{padding:5px 14px;color:var(--text-3);font-size:12.5px}
+.mini{padding:5px 9px;font-size:12.5px;border-radius:8px}
+.more{display:block;margin:12px auto 0}
+/* folder rows: name and path on top, mode picker underneath, so names never get cut short */
+.fsetting{flex-wrap:wrap;row-gap:8px}
+.fsetting .lab{min-width:0;flex:1 1 100%}
+.fsetting .lab b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.fsetting .lab small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fsetting .seg{flex:1}
+.fsetting .seg button{flex:1;padding:6px 10px}
+/* very wide windows: keep text pages at a readable width instead of many thin columns */
+#v-settings>*,#v-activity>*,#v-insights>*,#v-cleanup>*,#v-categories>*{max-width:1500px;margin-left:auto;margin-right:auto}
+#v-settings .cards{grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr))}
+
+/* smaller windows: icon sidebar, stacked panels, wrapping toolbars */
+@media (max-width:1100px){
+  .app{grid-template-columns:64px 1fr}
+  .side{padding:14px 8px}
+  .brand{justify-content:center;padding:4px 0 18px}
+  .brand .bt,.nav button span,.nav .count{display:none}
+  .nav button{justify-content:center;padding:10px}
+  .bgcard{padding:12px 0;display:grid;place-items:center;cursor:pointer}
+  .bgcard .t,.bgcard .s,.bgcard .btns{display:none}
+  .bgcard .row{justify-content:center}
+  .folder{max-width:40%}
+}
+@media (max-width:900px){
+  .top{flex-wrap:wrap;padding:12px 16px}
+  .folder{max-width:none;flex:1 1 100%;order:1}
+  .search{order:2}
+  #themeBtn{order:3}
+  .view{padding:16px 16px 90px}
+  .updbar{margin:10px 16px 0;flex-wrap:wrap}
+  .cat-wrap{grid-template-columns:1fr}
+  .bar{grid-template-columns:minmax(90px,140px) 1fr 44px}
+  .drawer{width:min(400px,94%)}
+  .fsetting{flex-wrap:wrap}
+}
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:999px;border:3px solid transparent;background-clip:content-box}
 </style>
 </head>
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><div class="logo"><svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 12h8M8 15h5"/></svg></div>Screenshot Sorter</div>
+    <div class="brand"><div class="logo"><svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 12h8M8 15h5"/></svg></div><span class="bt">Screenshot Sorter</span></div>
     <nav class="nav" id="nav"></nav>
     <div class="spacer"></div>
     <div class="bgcard" id="bgcard"></div>
@@ -279,7 +352,7 @@ input[type=range]{accent-color:var(--accent);width:160px}
   <main class="main">
     <div class="progress" id="progress"><i></i></div>
     <header class="top">
-      <div class="folder" id="folderBtn" title="Change folder">
+      <div class="folder" id="folderBtn" title="Switch folder">
         <svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         <span class="path" id="folderPath"></span>
         <button class="btn" style="padding:5px 10px" id="openFolder" title="Open in File Explorer"><svg class="i" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>
@@ -292,6 +365,7 @@ input[type=range]{accent-color:var(--accent);width:160px}
     <div class="updbar" id="updbar"></div>
     <section class="view" id="v-sort"></section>
     <section class="view" id="v-library"></section>
+    <section class="view" id="v-activity"></section>
     <section class="view" id="v-categories"></section>
     <section class="view" id="v-cleanup"></section>
     <section class="view" id="v-insights"></section>
@@ -327,6 +401,8 @@ const ICONS = {
   x:'<path d="M18 6 6 18M6 6l12 12"/>', left:'<path d="m15 18-6-6 6-6"/>', right:'<path d="m9 18 6-6-6-6"/>',
   plus:'<path d="M12 5v14M5 12h14"/>', sparkle:'<path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/>',
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+  activity:'<path d="M3 12h4l3-8 4 16 3-8h4"/>', pause:'<path d="M9 5v14M15 5v14"/>', folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  alert:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
   download:'<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
   zip:'<path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/>', bolt:'<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
   rename:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/>', report:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 17v-3M12 17v-6M16 17v-4"/>',
@@ -337,7 +413,7 @@ const api = (method, ...args) => window.__TAURI__.core.invoke('call', {method, a
 
 const S = { view:'sort', items:[], mode:'plan', filter:'All', sel:new Set(), last:null, rules:null, colors:{}, settings:{}, bg:{},
             folder:'', busy:false, cardSize:210, drawerItem:null, lbIndex:-1, editCat:null, dups:[] };
-const NAV = [['sort','Sort'],['library','Library'],['categories','Categories'],['cleanup','Clean up'],['insights','Insights'],['settings','Settings']];
+const NAV = [['sort','Sort'],['library','Library'],['activity','Activity'],['categories','Categories'],['cleanup','Clean up'],['insights','Insights'],['settings','Settings']];
 const V = () => document.getElementById(S.view === 'library' ? 'v-library' : 'v-sort');  // the grid view being shown
 const color = c => S.colors[c] || (c==='Unsorted' ? '#9aa1b2' : '#8a90a0');
 
@@ -396,14 +472,14 @@ function prompt2(title, text, value=''){
 
 /* ---------- shell ---------- */
 function renderNav(){
-  $('#nav').innerHTML = NAV.map(([k, l]) => `<button data-v="${k}" class="${S.view===k?'on':''}">${icon(k)}<span>${l}</span>
+  $('#nav').innerHTML = NAV.map(([k, l]) => `<button data-v="${k}" title="${l}" class="${S.view===k?'on':''}">${icon(k)}<span>${l}</span>
     ${k==='sort' && S.mode==='plan' && S.items.length ? `<span class="count">${S.items.length}</span>` : ''}</button>`).join('');
   document.querySelectorAll('#nav button').forEach(b => b.onclick = () => { S.navigated = true; go(b.dataset.v); });
 }
 function go(v){
   S.view = v; closeDrawer(); renderNav();
   document.querySelectorAll('.view').forEach(el => el.classList.toggle('on', el.id === 'v-' + v));
-  ({sort:renderSort, library:openLibrary, categories:renderCategories, cleanup:renderCleanup, insights:openInsights, settings:renderSettings})[v]();
+  ({sort:renderSort, library:openLibrary, activity:openActivity, categories:renderCategories, cleanup:renderCleanup, insights:openInsights, settings:renderSettings})[v]();
 }
 function renderFolder(){
   const parts = S.folder.split('\\'); const last = parts.pop();
@@ -415,21 +491,188 @@ function applyTheme(){
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   $('#themeBtn').innerHTML = icon(dark ? 'sun' : 'moon');
 }
+function lastText(b){ return b.last_sorted ? `Last: ${b.last_count} at ${b.last_sorted.slice(11,16)}, ${b.last_sorted.slice(5,10)}` : 'Nothing sorted yet'; }
 function renderBg(){
-  const b = S.bg, s = S.settings;
-  const mode = s.auto_mode === 'off' ? 'Off' : s.auto_mode === 'interval' ? `Every ${s.interval_hours}h` : 'Instant';
-  const last = b.last_sorted ? `Last: ${b.last_count} at ${b.last_sorted.slice(11,16)}, ${b.last_sorted.slice(5,10)}` : 'Nothing sorted yet';
-  $('#bgcard').innerHTML = `<div class="row"><span class="dot ${b.running?'live':''}"></span><span class="t">Auto-sort · ${mode}</span></div>
-    <div class="s">${b.running ? (s.show_tray_icon ? 'Running in the tray' : 'Running hidden') : 'Not running'} · ${esc(last)}</div>
-    <div style="display:flex;gap:6px;margin-top:10px">${b.running
-      ? `<button class="btn" style="padding:5px 10px;font-size:12.5px" id="bgStop">Stop</button>`
-      : `<button class="btn primary" style="padding:5px 10px;font-size:12.5px" id="bgStart" ${s.auto_mode==='off'?'disabled':''}>Start</button>`}
-      <button class="btn" style="padding:5px 10px;font-size:12.5px" id="bgCfg">Options</button></div>`;
-  const st = $('#bgStart'), sp = $('#bgStop');
-  if (st) st.onclick = async () => { S.bg = await api('start_background'); renderBg(); toast('Auto-sort started', S.settings.show_tray_icon ? 'Look for the icon near the clock.' : 'Running hidden in the background.'); };
-  if (sp) sp.onclick = async () => { S.bg = await api('stop_background'); renderBg(); toast('Auto-sort stopped'); };
-  $('#bgCfg').onclick = () => go('settings');
+  const b = S.bg || {}, s = S.settings, n = b.active || 0;
+  const state = b.busy ? b.busy : b.paused ? 'Paused' : n ? (s.show_tray_icon ? 'Running in the tray' : 'Running hidden') : 'Off for every folder';
+  const card = $('#bgcard');
+  card.title = `Auto-sort: ${state}`;
+  card.innerHTML = `<div class="row"><span class="dot ${b.running?'live':''}"></span><span class="t">Auto-sort · ${n ? `${n} folder${n>1?'s':''}` : 'Off'}</span></div>
+    <div class="s">${esc(state)} · ${esc(lastText(b))}</div>
+    <div class="btns" style="display:flex;gap:6px;margin-top:10px">${!n
+      ? `<button class="btn primary mini" id="bgSet">Set up</button>`
+      : b.paused ? `<button class="btn primary mini" id="bgRes">Resume</button>` : `<button class="btn mini" id="bgPause">Pause</button>`}
+      <button class="btn mini" id="bgAct">Activity</button></div>`;
+  card.onclick = e => { if (!e.target.closest('button') && innerWidth <= 1100) go('activity'); };
+  const on = (id, f) => { const el = $('#' + id); if (el) el.onclick = f; };
+  on('bgSet', () => go('settings'));
+  on('bgRes', async () => { S.bg = await api('resume'); renderBg(); toast('Auto-sort resumed'); if (S.view === 'activity') refreshActivity(true); });
+  on('bgPause', async () => { S.bg = await api('pause'); renderBg(); toast('Auto-sort paused', 'Nothing moves until you resume.'); if (S.view === 'activity') refreshActivity(true); });
+  on('bgAct', () => go('activity'));
 }
+
+/* ---------- folders ---------- */
+const baseName = p => String(p || '').replace(/[\\/]+$/, '').split(/[\\/]/).pop();
+function switchFolder(f, quiet){
+  S.folder = f; renderFolder(); S.items = []; S.dups = []; S.mode = 'plan'; S.sel.clear();
+  go(['activity','settings','categories'].includes(S.view) ? S.view : S.view === 'library' ? 'library' : 'sort');
+  if (!quiet) toast('Folder changed', f);
+}
+window.__switchFolder = (f, previewIt) => { if (f && f !== S.folder) switchFolder(f, true); if (previewIt) preview(); };
+function folderMenu(x, y){
+  closeMenu();
+  const fs = S.settings.folders || [];
+  const modeLbl = m => m === 'instant' ? 'Instant' : m === 'interval' ? `Every ${S.settings.interval_hours}h` : 'Off';
+  const m = document.createElement('div'); m.className = 'menu'; m.id = 'menu';
+  m.innerHTML = `<div class="lbl">Watched folders</div>` +
+    (fs.length ? fs.map((f, i) => `<button data-i="${i}" title="${esc(f.path)}">${icon('folder')}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(baseName(f.path))}</span><span class="badge ${f.mode!=='off'?'live':''}">${modeLbl(f.mode)}</span></button>`).join('')
+      : `<div class="muted" style="padding:4px 10px 8px">None yet</div>`) +
+    `<div class="sep"></div><button data-add>${icon('plus')}Watch another folder…</button><button data-other>${icon('open')}Open a folder without watching it…</button><button data-manage>${icon('settings')}Manage folders</button>`;
+  document.body.appendChild(m);
+  const r = m.getBoundingClientRect();
+  m.style.left = Math.min(x, innerWidth - r.width - 10) + 'px'; m.style.top = Math.min(y, innerHeight - r.height - 10) + 'px';
+  m.querySelectorAll('[data-i]').forEach(b => b.onclick = async () => { closeMenu(); const p = fs[+b.dataset.i].path; await api('set_folder', p); switchFolder(p); });
+  $('[data-add]', m).onclick = async () => { closeMenu(); await addFolder(); };
+  $('[data-other]', m).onclick = async () => { closeMenu(); const f = await api('pick_folder'); if (f) switchFolder(f); };
+  $('[data-manage]', m).onclick = () => { closeMenu(); go('settings'); };
+  setTimeout(() => document.addEventListener('mousedown', outside), 0);
+}
+async function addFolder(){
+  const r = await api('add_folder', 'instant');
+  if (!r) return;
+  S.settings = r.settings; S.bg = r.background; renderBg();
+  const added = (S.settings.folders || []).slice(-1)[0];
+  toast('Watching ' + baseName(added?.path), 'New screenshots there are sorted instantly. Change it in Settings.');
+  if (S.view === 'settings') renderSettings(); if (S.view === 'activity') refreshActivity(true);
+}
+
+/* ---------- activity ---------- */
+S.act = []; S.actShow = 250; S.af = {folder:'', kind:'all', cat:'', q:''};
+const hhmm = t => (t || '').slice(11, 16);
+function dayLabel(t){
+  const d = (t || '').slice(0, 10), now = new Date(), iso = x => new Date(x.getTime() - x.getTimezoneOffset()*60000).toISOString().slice(0, 10);
+  if (d === iso(now)) return 'Today';
+  if (d === iso(new Date(now - 864e5))) return 'Yesterday';
+  return new Date(d + 'T12:00').toLocaleDateString(undefined, {weekday:'long', day:'numeric', month:'long'});
+}
+function relTime(sec){
+  const d = sec - Date.now()/1000;
+  if (Math.abs(d) < 90) return d >= 0 ? 'in a minute' : 'just now';
+  const m = Math.round(Math.abs(d) / 60), h = Math.round(Math.abs(d) / 3600);
+  const t = m < 60 ? `${m} min` : `${h} h`;
+  return d >= 0 ? `in ${t}` : `${t} ago`;
+}
+async function openActivity(){
+  const el = $('#v-activity');
+  el.innerHTML = `<div class="vh"><div><h1>Activity</h1><div class="sub">What auto-sort and you have done, newest first. Updates live.</div></div>
+    <div class="actions"><button class="btn" id="actSort">${icon('play')}Sort all folders now</button><button class="btn" id="actAdd">${icon('plus')}Watch a folder</button></div></div>
+    <div class="act-status" id="actStatus"></div><div class="filters" id="actFilters"></div><div id="actFeed"><div class="empty"><p>Loading…</p></div></div>`;
+  $('#actSort').onclick = async () => { const b = $('#actSort'); b.disabled = true; b.innerHTML = `${icon('clock')}Sorting…`;
+    try { const n = await api('sort_all_now'); toast(n ? `Sorted ${n} screenshot${n===1?'':'s'}` : 'Nothing new to sort'); } finally { b.disabled = false; b.innerHTML = `${icon('play')}Sort all folders now`; refreshActivity(true); } };
+  $('#actAdd').onclick = addFolder;
+  S.actSig = ''; await refreshActivity(true);
+}
+async function refreshActivity(force){
+  if (S.view !== 'activity') return;
+  const r = await api('activity', 1500);
+  S.bg = r.status; renderBg();
+  const sig = r.entries.length + '|' + (r.entries[0] ? JSON.stringify(r.entries[0]) : '');
+  const fresh = force || sig !== S.actSig;
+  if (fresh) { S.actSig = sig; S.act = r.entries; }
+  renderActStatus();
+  if (fresh) { renderActFilters(); renderFeed(); }
+}
+function renderActStatus(){
+  const b = S.bg, n = b.active || 0;
+  const td = S.act.filter(e => (e.t || '').startsWith(new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0, 10)));
+  const auto = td.filter(e => e.kind === 'move' && e.by === 'auto').length, you = td.filter(e => (e.kind === 'move' || e.kind === 'rename') && e.by === 'you').length, errs = td.filter(e => e.kind === 'error').length;
+  const state = !n ? 'Off' : b.paused ? 'Paused' : b.busy ? 'Working' : 'Running';
+  const fs = b.folders || [];
+  $('#actStatus').innerHTML = `
+    <div class="box"><h2>${icon('bolt')}Auto-sort</h2>
+      <div class="bigstate"><span class="dot ${b.running?'live':''}"></span>${state}</div>
+      <div class="muted">${esc(b.busy || (n ? `${n} folder${n>1?'s':''} · ${S.settings.show_tray_icon ? 'tray icon near the clock' : 'running hidden'}` : 'Turn it on for a folder below or in Settings.'))}</div>
+      <div class="muted" style="margin-top:2px">${esc(lastText(b))}</div>
+      <div style="display:flex;gap:6px;margin-top:12px">${n ? (b.paused ? `<button class="btn primary mini" id="asRes">${icon('play')}Resume</button>` : `<button class="btn mini" id="asPause">${icon('pause')}Pause</button>`) : ''}</div></div>
+    <div class="box"><h2>${icon('folder')}Folders</h2>${fs.length ? fs.map(f => `<div class="fold" title="${esc(f.path)}">
+        <span class="p">${esc(baseName(f.path))}</span>${!f.exists ? `<span class="badge err">Missing</span>`
+        : f.mode === 'instant' ? `<span class="badge ${f.watching && !b.paused ? 'live' : ''}">${f.watching && !b.paused ? 'Watching · instant' : 'Instant'}</span>`
+        : f.mode === 'interval' ? `<span class="badge ${!b.paused?'live':''}">Every ${b.hours}h · next ${b.paused ? 'paused' : relTime(f.next)}</span>`
+        : `<span class="badge">Off</span>`}</div>`).join('') : `<p class="muted">No folders watched yet.</p>`}</div>
+    <div class="box"><h2>${icon('insights')}Today</h2><div class="nums">
+      <div><b>${auto}</b><span>sorted automatically</span></div><div><b>${you}</b><span>moved by you</span></div>
+      <div><b style="${errs?'color:var(--danger)':''}">${errs}</b><span>problems</span></div></div></div>`;
+  const on = (id, f) => { const el = $('#' + id); if (el) el.onclick = f; };
+  on('asPause', async () => { S.bg = await api('pause'); renderBg(); refreshActivity(true); toast('Auto-sort paused'); });
+  on('asRes', async () => { S.bg = await api('resume'); renderBg(); refreshActivity(true); toast('Auto-sort resumed'); });
+}
+function renderActFilters(){
+  const host = $('#actFilters'); if (!host) return;
+  const folders = [...new Set(S.act.map(e => e.folder).filter(Boolean))];
+  const cats = [...new Set(S.act.map(e => e.cat).filter(Boolean))].sort();
+  const f = S.af, focused = document.activeElement?.id === 'afQ';
+  host.innerHTML = `<div class="seg" id="afKind">${[['all','All'],['auto','Auto-sort'],['you','By you'],['error','Problems']].map(([k, l]) => `<button data-k="${k}" class="${f.kind===k?'on':''}">${l}</button>`).join('')}</div>
+    <select id="afFolder"><option value="">All folders</option>${folders.map(x => `<option value="${esc(x)}" ${f.folder===x?'selected':''}>${esc(baseName(x))}</option>`).join('')}</select>
+    <select id="afCat"><option value="">All categories</option>${cats.map(x => `<option ${f.cat===x?'selected':''}>${esc(x)}</option>`).join('')}</select>
+    <input id="afQ" placeholder="Filter by file name…" value="${esc(f.q)}">`;
+  host.querySelectorAll('#afKind button').forEach(b => b.onclick = () => { f.kind = b.dataset.k; S.actShow = 250; renderActFilters(); renderFeed(); });
+  $('#afFolder').onchange = e => { f.folder = e.target.value; S.actShow = 250; renderFeed(); };
+  $('#afCat').onchange = e => { f.cat = e.target.value; S.actShow = 250; renderFeed(); };
+  $('#afQ').oninput = e => { f.q = e.target.value; S.actShow = 250; renderFeed(); };
+  if (focused) { const q = $('#afQ'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+}
+function actList(){
+  const f = S.af, q = f.q.trim().toLowerCase();
+  return S.act.filter(e => {
+    if (f.kind === 'error' && e.kind !== 'error') return false;
+    if ((f.kind === 'auto' || f.kind === 'you') && (e.by !== f.kind)) return false;
+    if (f.kind !== 'all' && e.kind === 'info') return false;
+    if (f.folder && e.folder !== f.folder) return false;
+    if (f.cat && e.cat !== f.cat) return false;
+    if (q && !`${e.from||''} ${e.to||''} ${e.msg||''}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+function renderFeed(){
+  const host = $('#actFeed'); if (!host) return;
+  const list = actList();
+  if (!list.length) { host.innerHTML = `<div class="empty"><div class="art">${icon('activity')}</div><h3>Nothing here yet</h3><p>${S.act.length ? 'No activity matches these filters.' : 'When screenshots are sorted, moved or renamed, they show up here.'}</p></div>`; return; }
+  let html = '', lastDay = '';
+  const shown = list.slice(0, S.actShow);
+  shown.forEach((e, i) => {
+    const day = (e.t || '').slice(0, 10);
+    if (day !== lastDay) { html += `<div class="day">${esc(dayLabel(e.t))}</div>`; lastDay = day; }
+    html += evHtml(e, i);
+  });
+  host.innerHTML = `<div class="feed">${html}</div>` + (list.length > S.actShow ? `<button class="btn more" id="actMore">Show more (${list.length - S.actShow} older)</button>` : '');
+  $('#actMore') && ($('#actMore').onclick = () => { S.actShow += 500; renderFeed(); });
+  host.querySelectorAll('[data-undo]').forEach(b => b.onclick = async () => {
+    const e = shown[+b.dataset.undo];
+    try { await api('undo_one', e.from, e.to); toast('Moved back', baseName(e.from)); refreshActivity(true); }
+    catch (err) { toast("Couldn't undo that", String(err), {err:true}); }
+  });
+  host.querySelectorAll('[data-show]').forEach(b => b.onclick = () => api('reveal', shown[+b.dataset.show].to || shown[+b.dataset.show].file));
+  host.querySelectorAll('img.th').forEach(im => { im.onerror = () => im.replaceWith(Object.assign(document.createElement('div'), {className:'ic', innerHTML: icon('library')}));
+    im.onclick = () => api('open', shown[+im.dataset.i].to); });
+}
+function evHtml(e, i){
+  const tm = `<span class="tm">${hhmm(e.t)}</span>`;
+  if (e.kind === 'info') return `<div class="ev info">${icon('clock')}<span style="flex:1">${esc(e.msg)}</span>${tm}</div>`;
+  if (e.kind === 'error') return `<div class="ev"><div class="ic err">${icon('alert')}</div><div class="bd"><div class="l1"><span class="nm" style="color:var(--danger)">${esc(e.msg)}</span></div>
+      <div class="l2">${esc(e.folder ? baseName(e.folder) : '')}</div></div>${tm}<div class="acts">${e.file ? `<button class="btn mini" data-show="${i}">${icon('open')}Show</button>` : ''}</div></div>`;
+  const by = e.by === 'auto' ? `<span class="badge">Auto</span>` : `<span class="badge you">You</span>`;
+  const place = e.folder ? ` · ${esc(baseName(e.folder))}` : '';
+  let line2;
+  if (e.kind === 'rename') line2 = `Renamed from ${esc(baseName(e.from))}${place}`;
+  else if (e.kind === 'undo') { const dir = baseName(e.to.replace(/[\\/][^\\/]+$/, ''));
+    line2 = `Moved back to ${esc(dir)}${dir === baseName(e.folder) ? '' : place} · auto-sort will leave it alone`; }
+  else line2 = `→ <span class="sw" style="background:${color(e.cat)}"></span>${esc(e.cat)}${e.why ? ` · ${esc(e.why)}` : ''}${place}`;
+  const undo = e.kind !== 'undo' ? `<button class="btn mini" data-undo="${i}" title="Put it back">${icon('undo')}Undo</button>` : '';
+  return `<div class="ev"><img class="th" loading="lazy" data-i="${i}" src="${img(e.to, 160)}"><div class="bd">
+      <div class="l1"><span class="nm" title="${esc(e.to)}">${esc(baseName(e.to))}</span>${by}</div><div class="l2">${line2}</div></div>${tm}
+      <div class="acts">${undo}<button class="btn mini" data-show="${i}">${icon('open')}Show</button></div></div>`;
+}
+setInterval(() => { if (S.view === 'activity' && !document.hidden) refreshActivity(false).catch(() => {}); }, 3000);
 
 /* ---------- sort / library grid ---------- */
 function counts(){
@@ -443,17 +686,19 @@ function renderSort(){
   const el = $('#v-sort');
   const planHead = S.mode === 'plan';
   const title = S.mode === 'search' ? 'Search results' : 'Sort';
-  const sub = S.mode === 'search' ? `${S.items.length} screenshots contain “${esc(S.lastQuery)}”`
+  const sub = S.mode === 'search' ? `${S.items.length} screenshots contain “${esc(S.lastQuery)}”${S.searchAll ? ` · ${S.searchFolders} folders` : ''}`
     : S.items.length ? `${S.items.length} new screenshots · nothing moves until you press Sort now. Drag cards onto a category to change it.`
     : 'Preview where your new screenshots would go.';
   el.innerHTML = `<div class="vh"><div><h1>${title}</h1><div class="sub">${sub}</div></div>
     <div class="actions">
+      ${S.mode === 'search' && (S.settings.folders || []).length ? `<div class="seg" id="scope"><button data-a="" class="${S.searchAll?'':'on'}">This folder</button><button data-a="1" class="${S.searchAll?'on':''}">All folders</button></div>` : ''}
       <input type="range" min="150" max="360" value="${S.cardSize}" id="sizeR" title="Thumbnail size">
       <button class="btn" data-busy id="undoB">${icon('undo')}Undo</button>
       <button class="btn" data-busy id="prevB">${icon('eye')}Preview</button>
       <button class="btn primary" data-busy id="sortB">${icon('play')}Sort now</button></div></div>
     <div class="chips" id="chips"></div><div id="gridHost"></div>`;
   $('#prevB').onclick = preview; $('#sortB').onclick = sortNow; $('#undoB').onclick = undo;
+  el.querySelectorAll('#scope button').forEach(b => b.onclick = () => { S.searchAll = !!b.dataset.a; doSearch(S.lastQuery); });
   $('#sizeR').oninput = e => { S.cardSize = +e.target.value; document.documentElement.style.setProperty('--card', S.cardSize + 'px'); };
   if (!S.items.length && S.mode === 'plan') {
     $('#gridHost', V()).innerHTML = `<div class="empty"><div class="art">${icon('sparkle')}</div><h3>Ready when you are</h3>
@@ -801,10 +1046,12 @@ function renderSettings(){
   const s = S.settings, el = $('#v-settings');
   el.innerHTML = `<div class="vh"><div><h1>Settings</h1><div class="sub">Changes save automatically.</div></div></div>
   <div class="cards">
-    <div class="box"><h2>${icon('bolt')}Auto-sort in the background</h2><p class="desc">Runs quietly while you use your PC and starts when you log in.</p>
-      <div class="setting"><div class="lab">When to sort</div>
-        <div class="seg" id="modeSeg">${[['instant','Instantly'],['interval','Every few hours'],['off','Off']].map(([k, l]) => `<button data-m="${k}" class="${s.auto_mode===k?'on':''}">${l}</button>`).join('')}</div></div>
-      <div class="setting" id="hoursRow" style="${s.auto_mode==='interval'?'':'display:none'}"><div class="lab">Every <b id="hv">${s.interval_hours}</b> hours<small>Sweeps the folder on this schedule.</small></div>
+    <div class="box"><h2>${icon('bolt')}Auto-sort in the background</h2><p class="desc">Each folder is sorted the moment a screenshot lands, or every few hours. Keeps running after you close the window.</p>
+      ${(s.folders || []).map((f, i) => `<div class="setting fsetting"><div class="lab" title="${esc(f.path)}"><b>${esc(baseName(f.path))}</b><small>${esc(f.path)}</small></div>
+        <div class="seg" data-fi="${i}">${[['instant','Instantly'],['interval','Every few hours'],['off','Off']].map(([k, l]) => `<button data-m="${k}" class="${f.mode===k?'on':''}">${l}</button>`).join('')}</div>
+        <button class="iconbtn" data-rm="${i}" title="Stop watching this folder (no files are touched)">${icon('x')}</button></div>`).join('')}
+      <div class="setting"><div class="lab">${(s.folders || []).length ? '' : 'No folders yet. Add one to sort it automatically.'}</div><button class="btn" id="addFold">${icon('plus')}Add folder</button></div>
+      <div class="setting" id="hoursRow" style="${(s.folders || []).some(f => f.mode==='interval')?'':'display:none'}"><div class="lab">Every <b id="hv">${s.interval_hours}</b> hours<small>For folders set to “Every few hours”.</small></div>
         <input type="range" min="1" max="24" value="${s.interval_hours}" id="hours"></div>
       <div class="setting"><div class="lab">Show tray icon<small>Off = runs completely hidden. Stop it from here.</small></div>${sw('show_tray_icon', s.show_tray_icon)}</div>
       <div class="setting"><div class="lab">Start when I log in</div>${sw('start_tray_at_login', s.start_tray_at_login)}</div>
@@ -821,6 +1068,7 @@ function renderSettings(){
         <input class="field" type="password" id="key" placeholder="${s.has_claude_key ? '••••••••••••' : 'sk-ant-…'}" style="width:170px"><button class="btn" id="keyTest">Test</button></div></div>
     <div class="box"><h2>${icon('settings')}Windows</h2><p class="desc">Shortcuts into the rest of Windows.</p>
       <div class="setting"><div class="lab">File Explorer right-click menu<small>“Sort with Screenshot Sorter” on any folder (under Show more options on Windows 11).</small></div>${sw('explorer_menu', s.explorer_menu)}</div>
+      <div class="setting"><div class="lab">Size<small>Ctrl + and Ctrl − also work; Ctrl 0 resets.</small></div><div class="seg" id="zoomSeg">${[[0.8,'80%'],[0.9,'90%'],[1,'100%'],[1.1,'110%'],[1.25,'125%']].map(([z, l]) => `<button data-z="${z}" class="${Math.abs((s.ui_zoom||1)-z)<0.01?'on':''}">${l}</button>`).join('')}</div></div>
       <div class="setting"><div class="lab">Theme</div><div class="seg" id="themeSeg">${[['system','System'],['light','Light'],['dark','Dark']].map(([k, l]) => `<button data-t="${k}" class="${(s.theme||'system')===k?'on':''}">${l}</button>`).join('')}</div></div></div>
     <div class="box"><h2>${icon('download')}Updates</h2><p class="desc">You have version ${esc(S.version||'')}. New versions come from github.com/JustSad42/screenshot-sorter.</p>
       <div class="setting"><div class="lab">Check for updates automatically<small>Once a day; you choose when to install.</small></div>${sw('check_updates', s.check_updates !== false)}</div>
@@ -835,12 +1083,18 @@ function renderSettings(){
     if (i.dataset.k === 'arabic') save({languages: i.checked ? ['en-US','ar-SA'] : ['en-US']});
     else save({[i.dataset.k]: i.checked});
   });
-  el.querySelectorAll('#modeSeg button').forEach(b => b.onclick = async () => {
-    el.querySelectorAll('#modeSeg button').forEach(x => x.classList.toggle('on', x === b));
-    $('#hoursRow').style.display = b.dataset.m === 'interval' ? '' : 'none';
-    await save({auto_mode: b.dataset.m}, b.dataset.m === 'off' ? 'Auto-sort turned off' : 'Auto-sort mode saved');
-    if (b.dataset.m !== 'off' && !S.bg.running) { S.bg = await api('start_background'); renderBg(); }
+  el.querySelectorAll('[data-fi]').forEach(seg => seg.querySelectorAll('button').forEach(b => b.onclick = async () => {
+    const f = s.folders[+seg.dataset.fi];
+    const r = await api('set_folder_mode', f.path, b.dataset.m); S.settings = r.settings; S.bg = r.background; renderBg(); renderSettings();
+    toast(b.dataset.m === 'off' ? `Auto-sort off for ${baseName(f.path)}` : `${baseName(f.path)}: sorted ${b.dataset.m === 'instant' ? 'instantly' : 'every few hours'}`);
+  }));
+  el.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => {
+    const f = s.folders[+b.dataset.rm];
+    const r = await api('remove_folder', f.path); S.settings = r.settings; S.bg = r.background; renderBg(); renderSettings();
+    toast('Stopped watching ' + baseName(f.path), 'Its screenshots stay where they are.');
   });
+  $('#addFold').onclick = addFolder;
+  el.querySelectorAll('#zoomSeg button').forEach(b => b.onclick = () => setZoom(+b.dataset.z));
   $('#hours').oninput = e => $('#hv').textContent = e.target.value;
   $('#hours').onchange = e => save({interval_hours: +e.target.value});
   $('#names').onchange = e => save({your_names: e.target.value.split(',').map(x => x.trim()).filter(Boolean)});
@@ -875,10 +1129,18 @@ function renderUpd(){
 /* ---------- search, keys, boot ---------- */
 async function doSearch(q){
   if (!q) return;
-  const r = await job('search', {q}, 'Searching…');
-  S.mode = 'search'; S.lastQuery = q; S.items = r.items; S.filter = 'All'; S.sel.clear(); S.view = 'sort'; go('sort');
+  const r = await job('search', {q, all: !!S.searchAll}, 'Searching…');
+  S.searchFolders = r.folders || 1; S.mode = 'search'; S.lastQuery = q; S.items = r.items; S.filter = 'All'; S.sel.clear(); S.view = 'sort'; go('sort');
+}
+async function setZoom(z){
+  z = Math.round(Math.min(1.6, Math.max(0.6, z)) * 100) / 100;
+  S.settings.ui_zoom = await api('set_zoom', z);
+  toast(`Size ${Math.round(S.settings.ui_zoom * 100)}%`, '', {ms:1400});
+  if (S.view === 'settings') renderSettings();
 }
 document.addEventListener('keydown', e => {
+  if (e.ctrlKey && ['=','+','-','_','0'].includes(e.key)) { e.preventDefault();
+    const z = S.settings.ui_zoom || 1; setZoom(e.key === '0' ? 1 : (e.key === '-' || e.key === '_') ? z - 0.1 : z + 0.1); return; }
   const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
   if (e.key === '/' && !typing) { e.preventDefault(); $('#q').focus(); }
   if (e.key === 'Escape') { if ($('#lightbox').classList.contains('on')) $('#lightbox').classList.remove('on');
@@ -889,8 +1151,8 @@ document.addEventListener('keydown', e => {
 $('#q').onkeydown = e => { if (e.key === 'Enter') doSearch(e.target.value.trim()); };
 $('#themeBtn').onclick = async () => { const dark = document.documentElement.dataset.theme === 'dark';
   const r = await api('save_settings', {theme: dark ? 'light' : 'dark'}); S.settings = r.settings; applyTheme(); };
-$('#folderBtn').onclick = async e => { if (e.target.closest('#openFolder')) return api('open_folder');
-  const f = await api('pick_folder'); if (f) { S.folder = f; renderFolder(); S.items = []; S.dups = []; S.mode = 'plan'; go(S.view); toast('Folder changed', f); } };
+$('#folderBtn').onclick = e => { if (e.target.closest('#openFolder')) return api('open_folder');
+  const r = $('#folderBtn').getBoundingClientRect(); folderMenu(r.left, r.bottom + 6); };
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
 renderNav();
