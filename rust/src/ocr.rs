@@ -17,6 +17,16 @@ use windows::Storage::{FileAccessMode, StorageFile};
 pub type Cache = HashMap<String, String>;
 static CACHE_LOCK: Mutex<()> = Mutex::new(());
 
+/// A OneDrive (or other cloud) file that isn't on this PC yet. Reading it makes Windows
+/// download it first, which can be slow or time out, so it's only done when asked.
+pub fn online_only(p: &Path) -> bool {
+    use std::os::windows::fs::MetadataExt;
+    const OFFLINE: u32 = 0x1000;
+    const RECALL_ON_OPEN: u32 = 0x4_0000;
+    const RECALL_ON_DATA_ACCESS: u32 = 0x40_0000;
+    std::fs::symlink_metadata(p).map(|m| m.file_attributes() & (OFFLINE | RECALL_ON_OPEN | RECALL_ON_DATA_ACCESS) != 0).unwrap_or(false)
+}
+
 /// "name|size|mtime" - the same key the Python version used.
 pub fn cache_key(p: &Path) -> String {
     let (size, mtime) = std::fs::metadata(p)
@@ -125,9 +135,18 @@ pub type Log<'a> = &'a (dyn Fn(&str) + Sync);
 
 static POOL: once_cell::sync::Lazy<rayon::ThreadPool> =
     once_cell::sync::Lazy::new(|| rayon::ThreadPoolBuilder::new().num_threads(6).build().unwrap());
+/// Downloading from OneDrive goes better a couple of files at a time.
+static CLOUD_POOL: once_cell::sync::Lazy<rayon::ThreadPool> =
+    once_cell::sync::Lazy::new(|| rayon::ThreadPoolBuilder::new().num_threads(2).build().unwrap());
 
-/// Text for each path, reading only images that aren't cached yet.
+/// Text for each path that could be read. Files that couldn't be read are left out (never
+/// treated as "no text"), and online-only cloud files are skipped.
 pub fn ocr_files(paths: &[PathBuf], progress: Progress, log: Log) -> HashMap<PathBuf, String> {
+    ocr_files_ex(paths, progress, log, false)
+}
+
+/// Like ocr_files; with `download`, online-only files are fetched and read too (two at a time).
+pub fn ocr_files_ex(paths: &[PathBuf], progress: Progress, log: Log, download: bool) -> HashMap<PathBuf, String> {
     let mut cache = load_cache();
     let mut out = HashMap::new();
     let mut todo = Vec::new();
@@ -139,12 +158,20 @@ pub fn ocr_files(paths: &[PathBuf], progress: Progress, log: Log) -> HashMap<Pat
             None => todo.push(p.clone()),
         }
     }
+    if !download {
+        let before = todo.len();
+        todo.retain(|p| !online_only(p));
+        if todo.len() < before {
+            log(&format!("Skipped {} online-only OneDrive file(s) - use \"Download & sort\" in Activity to read them.", before - todo.len()));
+        }
+    }
     if !todo.is_empty() {
         log(&format!("Reading text from {} new image(s)...", todo.len()));
         let langs = settings::load().languages;
         let done = AtomicUsize::new(0);
         let total = todo.len();
-        let results: Vec<(PathBuf, Option<String>)> = POOL.install(|| {
+        let run = |f: &(dyn Fn() -> Vec<(PathBuf, Option<String>)> + Sync)| if download { CLOUD_POOL.install(f) } else { POOL.install(f) };
+        let results: Vec<(PathBuf, Option<String>)> = run(&|| {
             todo.par_iter()
                 .map(|p| {
                     let text = read_image(p, &langs)
@@ -156,11 +183,11 @@ pub fn ocr_files(paths: &[PathBuf], progress: Progress, log: Log) -> HashMap<Pat
                 .collect()
         });
         for (p, t) in results {
-            // a failed read isn't remembered, so it's tried again next time
-            if let Some(t) = &t {
+            // a failed read isn't remembered (or returned), so it's tried again next time
+            if let Some(t) = t {
                 cache.insert(cache_key(&p), t.clone());
+                out.insert(p, t);
             }
-            out.insert(p, t.unwrap_or_default());
         }
         save_cache(&cache);
     }

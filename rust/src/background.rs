@@ -158,6 +158,8 @@ pub struct Worker {
     notify: Option<Box<dyn Fn(&str, &str) + Send + Sync>>,
     /// what it's doing right now, for the Activity page
     busy: Mutex<String>,
+    /// (done, total) for the current busy step
+    prog: Mutex<(usize, usize)>,
     watching: Mutex<Vec<PathBuf>>,
 }
 
@@ -182,6 +184,7 @@ pub fn start(notify: Option<Box<dyn Fn(&str, &str) + Send + Sync>>) -> Arc<Worke
                 seen: Default::default(),
                 notify,
                 busy: Default::default(),
+                prog: Default::default(),
                 watching: Default::default(),
             });
             let w2 = w.clone();
@@ -235,6 +238,7 @@ impl Worker {
     }
 
     fn set_busy(&self, s: &str) {
+        *self.prog.lock().unwrap() = (0, 0);
         *self.busy.lock().unwrap() = s.to_string();
         changed();
     }
@@ -265,12 +269,15 @@ impl Worker {
 
     /// Sort these files in `folder`. -> how many moved
     pub fn sort_files(&self, folder: &Path, files: &[PathBuf], several_folders: bool) -> usize {
+        // online-only OneDrive files aren't new screenshots; reading them means downloading
+        let files: Vec<PathBuf> = files.iter().filter(|p| !crate::ocr::online_only(p)).cloned().collect();
+        let files = &files[..];
         if files.is_empty() {
             return 0;
         }
         self.set_busy(&format!("Sorting {} new screenshot{} in {}", files.len(), if files.len() == 1 { "" } else { "s" }, folder_name(folder)));
         let log = |m: &str| log_line("background.log", m);
-        let items = sorter::classify_files(files, folder, &|_, _| {}, &log, true);
+        let items = sorter::classify_files(files, folder, &|d, t| *self.prog.lock().unwrap() = (d, t), &log, true);
         let done = sorter::apply_plan(folder, &items, "auto");
         {
             let mut seen = self.seen.lock().unwrap();
@@ -418,6 +425,7 @@ pub fn status_json() -> Value {
         .collect();
     json!({"running": w.is_some() && s.auto_on() && !is_paused(), "paused": is_paused(), "on": s.auto_on(),
            "active": s.active_folders().len(), "busy": w.map(|w| w.busy.lock().unwrap().clone()).unwrap_or_default(),
+           "prog": w.map(|w| { let (d, t) = *w.prog.lock().unwrap(); json!([d, t]) }).unwrap_or(json!([0, 0])),
            "folders": folders, "hours": s.interval_hours, "now": now_secs(),
            "last_sorted": st.get("last_sorted"), "last_count": st.get("last_count"),
            "start_at_login": login, "explorer_menu": menu})

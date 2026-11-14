@@ -212,14 +212,20 @@ impl Item {
 }
 
 /// Text rules first, then (optionally) looks, then Claude.
+/// Categories for the files whose text could be read. Files that couldn't be read
+/// (or online-only OneDrive files) are left out, so they stay where they are.
 pub fn classify_files(files: &[PathBuf], folder: &Path, progress: Progress, log: Log, allow_claude: bool) -> Vec<Item> {
-    let texts = ocr::ocr_files(files, progress, log);
+    classify_files_ex(files, folder, progress, log, allow_claude, false)
+}
+
+pub fn classify_files_ex(files: &[PathBuf], folder: &Path, progress: Progress, log: Log, allow_claude: bool, download: bool) -> Vec<Item> {
+    let texts = ocr::ocr_files_ex(files, progress, log, download);
     let rules = rules::load();
     let s = settings::load();
     let mut items: Vec<Item> = files
         .iter()
-        .map(|p| {
-            let t = texts.get(p).cloned().unwrap_or_default();
+        .filter_map(|p| texts.get(p).map(|t| (p, t.clone())))
+        .map(|(p, t)| {
             let (c, hits, _) = rules.classify(&t);
             Item { path: p.clone(), category: c, hits, how: "text".into(), text: t }
         })
@@ -261,6 +267,35 @@ pub fn classify_files(files: &[PathBuf], folder: &Path, progress: Progress, log:
 
 pub fn make_plan(folder: &Path, progress: Progress, log: Log, allow_claude: bool) -> Vec<Item> {
     classify_files(&loose_images(folder), folder, progress, log, allow_claude)
+}
+
+/// Images that were never read: online-only OneDrive files that are loose or in the
+/// "No Text" folder, plus anything in "No Text" with no cached text.
+pub fn unread_images(folder: &Path) -> Vec<PathBuf> {
+    let rules = rules::load();
+    let cache = ocr::load_cache();
+    all_images(folder)
+        .into_iter()
+        .filter(|p| {
+            let cat = category_of(folder, p);
+            (cat.is_none() || cat.as_deref() == Some(rules.no_text.as_str())) && !cache.contains_key(&ocr::cache_key(p))
+        })
+        .collect()
+}
+
+/// Download (if needed), read and file the unread images. Files that turn out to have
+/// no text stay in (or go to) "No Text". -> moves made
+pub fn fetch_and_sort(folder: &Path, progress: Progress, log: Log) -> Vec<(PathBuf, PathBuf)> {
+    let files = unread_images(folder);
+    if files.is_empty() {
+        return Vec::new();
+    }
+    log(&format!("Downloading and reading {} file(s)...", files.len()));
+    let items: Vec<Item> = classify_files_ex(&files, folder, progress, log, true, true)
+        .into_iter()
+        .filter(|it| category_of(folder, &it.path).as_deref() != Some(it.category.as_str()))
+        .collect();
+    apply_plan(folder, &items, "auto")
 }
 
 // ---------- moving & undo ----------

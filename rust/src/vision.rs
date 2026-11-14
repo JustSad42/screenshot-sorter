@@ -85,7 +85,9 @@ pub fn fingerprints(paths: &[PathBuf], log: Log) -> HashMap<PathBuf, Fp> {
             Some(fp) => {
                 out.insert(p.clone(), fp.clone());
             }
-            None => todo.push((p.clone(), k)),
+            // online-only OneDrive files would have to be downloaded first: leave them out
+            None if !crate::ocr::online_only(p) => todo.push((p.clone(), k)),
+            None => {}
         }
     }
     if !todo.is_empty() {

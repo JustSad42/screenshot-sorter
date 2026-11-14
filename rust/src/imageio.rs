@@ -43,7 +43,19 @@ pub fn open(p: &Path) -> Option<DynamicImage> {
     if WINDOWS_DECODED.contains(&ext(p).as_str()) {
         return windows_decode(p).ok();
     }
-    image::open(p).ok().or_else(|| windows_decode(p).ok())
+    open_oriented(p).or_else(|| windows_decode(p).ok())
+}
+
+/// Decode with the image crate and turn phone photos the right way up (EXIF orientation).
+fn open_oriented(p: &Path) -> Option<DynamicImage> {
+    use image::ImageDecoder;
+    let mut dec = image::ImageReader::open(p).ok()?.with_guessed_format().ok()?.into_decoder().ok()?;
+    let orientation = dec.orientation().ok();
+    let mut img = DynamicImage::from_decoder(dec).ok()?;
+    if let Some(o) = orientation {
+        img.apply_orientation(o);
+    }
+    Some(img)
 }
 
 /// AVIF, full colour detail (4:4:4). quality 80 keeps screenshot text crisp at a fraction of the size.

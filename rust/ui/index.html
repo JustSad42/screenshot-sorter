@@ -23,7 +23,7 @@ body{background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI Variable Te
 button{font:inherit;color:inherit}
 input,select,textarea{font:inherit;color:inherit}
 svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.app{display:grid;grid-template-columns:232px 1fr;height:100vh}
+.app{display:grid;grid-template-columns:232px 1fr;grid-template-rows:minmax(0,1fr);height:100vh;overflow:hidden}
 
 /* sidebar */
 .side{background:var(--sidebar);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:16px 12px;min-height:0;overflow:auto}
@@ -48,7 +48,7 @@ svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-widt
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(12,163,12,.45)}70%{box-shadow:0 0 0 7px rgba(12,163,12,0)}100%{box-shadow:0 0 0 0 rgba(12,163,12,0)}}
 
 /* main */
-.main{display:flex;flex-direction:column;min-width:0;position:relative}
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;position:relative}
 .top{display:flex;align-items:center;gap:10px;padding:14px 22px;border-bottom:1px solid var(--line);background:var(--bg)}
 .folder{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;
   padding:7px 8px 7px 12px;min-width:0;max-width:44%;cursor:pointer;transition:border-color .15s}
@@ -80,7 +80,7 @@ svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-widt
 .progress.indet i{width:35%;animation:indet 1.1s infinite ease-in-out}
 @keyframes indet{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
 
-.view{flex:1;overflow:auto;padding:20px 22px 90px;display:none}
+.view{flex:1 1 auto;min-height:0;overflow:auto;padding:20px 22px 90px;display:none;scrollbar-gutter:stable}
 .view.on{display:block;animation:fade .2s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .vh{display:flex;align-items:flex-end;gap:12px;margin-bottom:14px;flex-wrap:wrap}
@@ -107,6 +107,13 @@ svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-widt
 .card .thumb{aspect-ratio:16/10;background:var(--panel-2);overflow:hidden;position:relative}
 .card img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .25s,transform .3s}
 .card img.ld{opacity:1}
+@keyframes shimmer{from{background-position:-200% 0}to{background-position:200% 0}}
+.card .thumb:not(.done){background:linear-gradient(90deg,var(--panel-2) 30%,var(--line) 50%,var(--panel-2) 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.card .thumb .ph{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text-3);font-size:12px;text-align:center;padding:10px}
+.card .thumb .ph svg{width:26px;height:26px}
+.card .thumb.bad .ph{display:flex}
+.card .cloudtag{position:absolute;top:8px;right:8px;display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:rgba(0,0,0,.55);color:#fff}
+.card .cloudtag svg{width:15px;height:15px}
 .card:hover img{transform:scale(1.03)}
 .card .meta{padding:8px 10px 10px}
 .card .name{font-size:12.5px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -195,7 +202,8 @@ svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-widt
 .toast .tb small{display:block;color:var(--text-3)}
 .toast .ta{border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer;padding:0 0 0 6px}
 @keyframes slidein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.status{position:absolute;left:22px;bottom:14px;font-size:12px;color:var(--text-3);pointer-events:none}
+.status{position:absolute;left:22px;right:22px;bottom:10px;font-size:12px;color:var(--text-3);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status:not(:empty){background:var(--bg);padding:4px 10px;border-radius:8px;border:1px solid var(--line);width:max-content;max-width:calc(100% - 44px)}
 
 /* cards & forms */
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px}
@@ -268,6 +276,19 @@ input[type=range]{accent-color:var(--accent);width:160px}
 /* activity */
 .act-status{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:14px;margin-bottom:16px}
 .act-status .box{padding:16px}
+.job{margin-top:10px}
+.job .jl{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:550}
+.job .jl span:last-child{color:var(--text-3);font-variant-numeric:tabular-nums;font-weight:500;flex:none}
+.job .jm{font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.jbar{height:6px;border-radius:999px;background:var(--panel-2);overflow:hidden;margin-top:6px}
+.jbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#a78bfa);transition:width .3s}
+.jbar.indet i{width:30%;animation:indet 1.2s ease-in-out infinite}
+.attn{border:1px solid rgba(217,145,0,.45);background:rgba(217,145,0,.08);border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.attn>svg{width:22px;height:22px;stroke:#d99100;flex:none;margin-top:2px}
+.attn .tx{flex:1 1 320px;min-width:0}
+.attn .tx b{display:block;margin-bottom:2px}
+.attn .tx p{margin:2px 0 0;color:var(--text-2);font-size:13px}
+.attn .row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
 .bigstate{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:650;margin:4px 0 2px}
 .bigstate .dot{width:10px;height:10px}
 .muted{color:var(--text-3);font-size:13px}
@@ -289,7 +310,7 @@ input[type=range]{accent-color:var(--accent);width:160px}
 .day:not(:first-child){border-top:1px solid var(--line)}
 .ev{display:flex;align-items:center;gap:12px;padding:8px 14px;border-top:1px solid var(--line);min-width:0}
 .day+.ev{border-top:0}
-.ev .th{width:64px;height:40px;border-radius:7px;object-fit:cover;background:var(--panel-2);flex:none;cursor:zoom-in}
+.ev .th{width:88px;height:55px;border-radius:7px;object-fit:cover;background:var(--panel-2);flex:none;cursor:zoom-in}
 .ev .ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:var(--panel-2);flex:none;color:var(--text-3)}
 .ev .ic.err{background:#fde8e8;color:var(--danger)}
 .ev .bd{flex:1;min-width:0}
@@ -298,7 +319,7 @@ input[type=range]{accent-color:var(--accent);width:160px}
 .ev .l2{font-size:12.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ev .l2 .sw{display:inline-block;width:8px;height:8px;border-radius:3px;margin:0 4px 0 2px}
 .ev .tm{font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums;flex:none}
-.ev .acts{display:flex;gap:4px;opacity:0;transition:opacity .15s;flex:none}
+.ev .acts{display:flex;gap:4px;opacity:.6;transition:opacity .15s;flex:none}
 .ev:hover .acts{opacity:1}
 .ev.info{padding:5px 14px;color:var(--text-3);font-size:12.5px}
 .mini{padding:5px 9px;font-size:12.5px;border-radius:8px}
@@ -404,6 +425,8 @@ const ICONS = {
   activity:'<path d="M3 12h4l3-8 4 16 3-8h4"/>', pause:'<path d="M9 5v14M15 5v14"/>', folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   alert:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
   download:'<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+  cloud:'<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/>',
+  imageoff:'<path d="M3 3l18 18M21 15V5a2 2 0 0 0-2-2H9M3 7v12a2 2 0 0 0 2 2h12"/><path d="m3 16 5-5 4 4"/>',
   zip:'<path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/>', bolt:'<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
   rename:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/>', report:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 17v-3M12 17v-6M16 17v-4"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', robot:'<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/>'
@@ -566,7 +589,7 @@ async function openActivity(){
   const el = $('#v-activity');
   el.innerHTML = `<div class="vh"><div><h1>Activity</h1><div class="sub">What auto-sort and you have done, newest first. Updates live.</div></div>
     <div class="actions"><button class="btn" id="actSort">${icon('play')}Sort all folders now</button><button class="btn" id="actAdd">${icon('plus')}Watch a folder</button></div></div>
-    <div class="act-status" id="actStatus"></div><div class="filters" id="actFilters"></div><div id="actFeed"><div class="empty"><p>Loading…</p></div></div>`;
+    <div id="actAttn"></div><div class="act-status" id="actStatus"></div><div class="filters" id="actFilters"></div><div id="actFeed"><div class="empty"><p>Loading…</p></div></div>`;
   $('#actSort').onclick = async () => { const b = $('#actSort'); b.disabled = true; b.innerHTML = `${icon('clock')}Sorting…`;
     try { const n = await api('sort_all_now'); toast(n ? `Sorted ${n} screenshot${n===1?'':'s'}` : 'Nothing new to sort'); } finally { b.disabled = false; b.innerHTML = `${icon('play')}Sort all folders now`; refreshActivity(true); } };
   $('#actAdd').onclick = addFolder;
@@ -575,12 +598,38 @@ async function openActivity(){
 async function refreshActivity(force){
   if (S.view !== 'activity') return;
   const r = await api('activity', 1500);
-  S.bg = r.status; renderBg();
+  S.bg = r.status; S.jobs = r.jobs || []; S.unread = r.unread || []; renderBg();
   const sig = r.entries.length + '|' + (r.entries[0] ? JSON.stringify(r.entries[0]) : '');
   const fresh = force || sig !== S.actSig;
   if (fresh) { S.actSig = sig; S.act = r.entries; }
-  renderActStatus();
+  renderActStatus(); renderAttn();
   if (fresh) { renderActFilters(); renderFeed(); }
+}
+const JOB_LABEL = {preview:'Previewing new screenshots', sort:'Sorting', browse:'Loading the library', search:'Searching', fetch_cloud:'Downloading & sorting OneDrive files',
+  rename:'Giving files readable names', dups:'Looking for duplicates', recycle:'Moving to the Recycle Bin', shrink:'Shrinking pictures', report:'Making the report', insights:'Counting', undo:'Undoing'};
+function jobHtml(label, msg, d, t){
+  const pct = t ? Math.min(100, 100 * d / t) : 0;
+  return `<div class="job"><div class="jl"><span>${esc(label)}</span><span>${t ? `${d.toLocaleString()} / ${t.toLocaleString()}` : ''}</span></div>
+    ${msg ? `<div class="jm" title="${esc(msg)}">${esc(msg)}</div>` : ''}<div class="jbar ${t ? '' : 'indet'}"><i style="${t ? `width:${pct}%` : ''}"></i></div></div>`;
+}
+function renderAttn(){
+  const host = $('#actAttn'); if (!host) return;
+  const un = (S.unread || []).filter(u => u.count > 0);
+  const fetching = (S.jobs || []).some(j => j.kind === 'fetch_cloud');
+  if (!un.length) { host.innerHTML = ''; return; }
+  host.innerHTML = un.map(u => `<div class="attn">${icon('cloud')}<div class="tx">
+      <b>${u.count.toLocaleString()} picture${u.count===1?'':'s'} in ${esc(baseName(u.folder))} ${u.count===1?'hasn’t':'haven’t'} been read yet</b>
+      <p>${u.cloud ? `${u.cloud === u.count ? 'They are' : `${u.cloud.toLocaleString()} are`} online-only in OneDrive, so they aren't on this PC and can't be read until they're downloaded. ` : ''}Until then they stay loose or in “No Text”, and search can't find them.</p>
+      <div class="row"><button class="btn primary mini" data-fetch="${esc(u.folder)}" ${fetching || S.busy ? 'disabled' : ''}>${icon('download')}${fetching ? 'Working on it…' : 'Download & sort them'}</button>
+      <span class="muted" style="font-size:12px">Downloads them from OneDrive (they'll take up space on this PC), reads them two at a time and files each one.</span></div></div></div>`).join('');
+  host.querySelectorAll('[data-fetch]').forEach(b => b.onclick = async () => {
+    b.disabled = true; b.innerHTML = `${icon('download')}Working on it…`;
+    refreshActivity(true);
+    try { const r = await job('fetch_cloud', {folder: b.dataset.fetch}, 'Downloading & sorting OneDrive files…');
+      toast(r.moved ? `Filed ${r.moved} picture${r.moved===1?'':'s'}` : 'Done', 'See the list below for where each one went.'); }
+    catch (e) { if (String(e) !== 'Error: busy') toast("Couldn't finish", String(e), {err:true}); }
+    finally { refreshActivity(true); }
+  });
 }
 function renderActStatus(){
   const b = S.bg, n = b.active || 0;
@@ -589,10 +638,12 @@ function renderActStatus(){
   const state = !n ? 'Off' : b.paused ? 'Paused' : b.busy ? 'Working' : 'Running';
   const fs = b.folders || [];
   $('#actStatus').innerHTML = `
-    <div class="box"><h2>${icon('bolt')}Auto-sort</h2>
-      <div class="bigstate"><span class="dot ${b.running?'live':''}"></span>${state}</div>
-      <div class="muted">${esc(b.busy || (n ? `${n} folder${n>1?'s':''} · ${S.settings.show_tray_icon ? 'tray icon near the clock' : 'running hidden'}` : 'Turn it on for a folder below or in Settings.'))}</div>
-      <div class="muted" style="margin-top:2px">${esc(lastText(b))}</div>
+    <div class="box"><h2>${icon('bolt')}Right now</h2>
+      <div class="bigstate"><span class="dot ${b.running?'live':''}"></span>${(S.jobs||[]).length && state !== 'Paused' ? 'Working' : state}</div>
+      ${b.busy ? jobHtml(b.busy, '', (b.prog||[0,0])[0], (b.prog||[0,0])[1]) : ''}
+      ${(S.jobs||[]).map(j => jobHtml(JOB_LABEL[j.kind] || j.kind, j.message, j.progress[0], j.progress[1])).join('')}
+      ${!b.busy && !(S.jobs||[]).length ? `<div class="muted">${esc(n ? (b.paused ? 'Paused. Nothing moves until you resume.' : `Waiting for new screenshots in ${n} folder${n>1?'s':''}`) : 'Turn auto-sort on for a folder in Settings.')}</div>` : ''}
+      <div class="muted" style="margin-top:6px">${esc(lastText(b))}</div>
       <div style="display:flex;gap:6px;margin-top:12px">${n ? (b.paused ? `<button class="btn primary mini" id="asRes">${icon('play')}Resume</button>` : `<button class="btn mini" id="asPause">${icon('pause')}Pause</button>`) : ''}</div></div>
     <div class="box"><h2>${icon('folder')}Folders</h2>${fs.length ? fs.map(f => `<div class="fold" title="${esc(f.path)}">
         <span class="p">${esc(baseName(f.path))}</span>${!f.exists ? `<span class="badge err">Missing</span>`
@@ -672,7 +723,10 @@ function evHtml(e, i){
       <div class="l1"><span class="nm" title="${esc(e.to)}">${esc(baseName(e.to))}</span>${by}</div><div class="l2">${line2}</div></div>${tm}
       <div class="acts">${undo}<button class="btn mini" data-show="${i}">${icon('open')}Show</button></div></div>`;
 }
-setInterval(() => { if (S.view === 'activity' && !document.hidden) refreshActivity(false).catch(() => {}); }, 3000);
+// faster while something is running, so progress moves smoothly
+(function actTick(){ const busy = (S.jobs||[]).length || S.bg?.busy;
+  if (S.view === 'activity' && !document.hidden) refreshActivity(false).catch(() => {});
+  setTimeout(actTick, busy ? 1000 : 3000); })();
 
 /* ---------- sort / library grid ---------- */
 function counts(){
@@ -728,7 +782,9 @@ function renderGrid(){
   if (!list.length) { host.innerHTML = `<div class="empty"><div class="art">${icon('library')}</div><h3>Nothing here</h3><p>No screenshots in this view.</p></div>`; updateSel(); return; }
   host.innerHTML = `<div class="grid ${S.sel.size?'selecting':''}" id="grid">` + list.map((it, i) => `
     <div class="card ${S.sel.has(it.p)?'sel':''}" draggable="true" data-i="${i}">
-      <div class="thumb"><img loading="lazy" decoding="async" src="${img(it.p, 480)}" onload="this.classList.add('ld')">
+      <div class="thumb"><img loading="lazy" decoding="async" src="${img(it.p, 480)}" onload="this.classList.add('ld');this.parentNode.classList.add('done')" onerror="this.parentNode.classList.add('done','bad')">
+        <div class="ph">${it.cloud ? `${icon('cloud')}Online-only in OneDrive<br>no preview yet` : `${icon('imageoff')}Can't show this picture`}</div>
+        ${it.cloud ? `<span class="cloudtag" title="Online-only in OneDrive: not downloaded to this PC">${icon('cloud')}</span>` : ''}
         <span class="tag"><i style="background:${color(it.c)}"></i>${esc(it.c)}</span><span class="check"></span></div>
       <div class="meta"><div class="name">${esc(it.n)}</div><div class="why">${esc(it.r || ' ')}</div></div></div>`).join('') + '</div>';
   const cards = host.querySelectorAll('.card');

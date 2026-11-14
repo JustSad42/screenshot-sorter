@@ -169,7 +169,7 @@ fn fnv(s: &str) -> u64 {
 
 /// JPEG thumbnail, made once and kept in thumbs/ next to the app.
 pub fn thumb_bytes(p: &Path, size: u32) -> Option<Vec<u8>> {
-    let key = format!("{:016x}", fnv(&format!("{}|{}|{}", p.display(), cache_key(p), size)));
+    let key = format!("{:016x}", fnv(&format!("v2|{}|{}|{}", p.display(), cache_key(p), size)));
     let f = settings::app_file("thumbs").join(&key[..2]).join(format!("{key}.jpg"));
     if let Ok(b) = std::fs::read(&f) {
         return Some(b);
@@ -186,8 +186,71 @@ pub fn thumb_bytes(p: &Path, size: u32) -> Option<Vec<u8>> {
     Some(buf)
 }
 
+/// Thumbnail for an online-only OneDrive file from Windows' thumbnail cache / OneDrive,
+/// the way File Explorer shows them, without downloading the file. Cached like other thumbs.
+/// Needs COM initialised on the calling thread.
+pub fn cloud_thumb_bytes(p: &Path, size: u32) -> Option<Vec<u8>> {
+    let key = format!("{:016x}", fnv(&format!("v2|{}|{}|{}", p.display(), cache_key(p), size)));
+    let f = settings::app_file("thumbs").join(&key[..2]).join(format!("{key}.jpg"));
+    if let Ok(b) = std::fs::read(&f) {
+        return Some(b);
+    }
+    let img = shell_thumbnail(p, size)?;
+    let img = image::DynamicImage::ImageRgb8(img).thumbnail(size, size).to_rgb8();
+    let mut buf = Vec::new();
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buf, 82)
+        .write_image(img.as_raw(), img.width(), img.height(), image::ExtendedColorType::Rgb8)
+        .ok()?;
+    if let Some(d) = f.parent() {
+        let _ = std::fs::create_dir_all(d);
+    }
+    let _ = std::fs::write(&f, &buf);
+    Some(buf)
+}
+
+fn shell_thumbnail(p: &Path, size: u32) -> Option<image::RgbImage> {
+    use windows::core::HSTRING;
+    use windows::Win32::Foundation::SIZE;
+    use windows::Win32::Graphics::Gdi::*;
+    use windows::Win32::UI::Shell::{IShellItemImageFactory, SHCreateItemFromParsingName, SIIGBF_BIGGERSIZEOK, SIIGBF_THUMBNAILONLY};
+    unsafe {
+        let factory: IShellItemImageFactory = SHCreateItemFromParsingName(&HSTRING::from(crate::ocr::win_path(p)), None).ok()?;
+        let hbm = factory.GetImage(SIZE { cx: size as i32, cy: size as i32 }, SIIGBF_THUMBNAILONLY | SIIGBF_BIGGERSIZEOK).ok()?;
+        let obj = HGDIOBJ(hbm.0);
+        let mut bm = BITMAP::default();
+        let ok = GetObjectW(obj, std::mem::size_of::<BITMAP>() as i32, Some(&mut bm as *mut BITMAP as *mut _)) != 0;
+        let (w, h) = (bm.bmWidth, bm.bmHeight.abs());
+        let mut out = None;
+        if ok && w > 0 && h > 0 {
+            let mut bi = BITMAPINFO {
+                bmiHeader: BITMAPINFOHEADER {
+                    biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+                    biWidth: w,
+                    biHeight: -h,
+                    biPlanes: 1,
+                    biBitCount: 32,
+                    biCompression: BI_RGB.0,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            let mut px = vec![0u8; (w * h * 4) as usize];
+            let dc = GetDC(None);
+            let lines = GetDIBits(dc, hbm, 0, h as u32, Some(px.as_mut_ptr() as *mut _), &mut bi, DIB_RGB_COLORS);
+            ReleaseDC(None, dc);
+            if lines > 0 {
+                let rgb: Vec<u8> = px.chunks_exact(4).flat_map(|c| [c[2], c[1], c[0]]).collect();
+                out = image::RgbImage::from_raw(w as u32, h as u32, rgb);
+            }
+        }
+        let _ = DeleteObject(obj);
+        out
+    }
+}
+
 /// Make missing grid thumbnails in the background (newest first).
 pub fn prewarm_thumbs(mut paths: Vec<PathBuf>, size: u32) {
+    paths.retain(|p| !crate::ocr::online_only(p));
     paths.reverse();
     std::thread::spawn(move || {
         let pool = rayon::ThreadPoolBuilder::new().num_threads(2).build().unwrap();

@@ -18,6 +18,7 @@ const PALETTE: [&str; 8] = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4
 static FOLDER: Lazy<Mutex<PathBuf>> = Lazy::new(|| Mutex::new(settings::default_folder()));
 
 struct Job {
+    kind: String,
     done: bool,
     progress: (usize, usize),
     message: String,
@@ -78,7 +79,26 @@ fn item_json(folder: &Path, p: &Path, reason: String, text: &str) -> Value {
     json!({"p": p.to_string_lossy(), "n": p.file_name().unwrap_or_default().to_string_lossy(),
            "c": sorter::category_of(&root, p).unwrap_or_else(|| "Unsorted".into()),
            "f": root.file_name().unwrap_or_default().to_string_lossy(),
-           "r": reason, "t": text.chars().take(700).collect::<String>()})
+           "r": reason, "t": text.chars().take(700).collect::<String>(), "cloud": ocr::online_only(p)})
+}
+
+/// Per folder: images never read (mostly online-only OneDrive files). Counted at most once a minute.
+static UNREAD: Lazy<Mutex<(Option<std::time::Instant>, Value)>> = Lazy::new(|| Mutex::new((None, json!([]))));
+fn unread_summary(force: bool) -> Value {
+    let mut g = UNREAD.lock().unwrap();
+    if !force && g.0.map(|t| t.elapsed().as_secs() < 60).unwrap_or(false) {
+        return g.1.clone();
+    }
+    let v: Vec<Value> = all_folders()
+        .iter()
+        .filter_map(|f| {
+            let un = sorter::unread_images(f);
+            let cloud = un.iter().filter(|p| ocr::online_only(p)).count();
+            (!un.is_empty()).then(|| json!({"folder": f.to_string_lossy(), "count": un.len(), "cloud": cloud}))
+        })
+        .collect();
+    *g = (Some(std::time::Instant::now()), json!(v));
+    g.1.clone()
 }
 
 fn library_file() -> PathBuf {
@@ -128,6 +148,15 @@ fn run_job(kind: &str, a: &Value, f: &Path, progress: ocr::Progress, log: ocr::L
             let cache = ocr::load_cache();
             json!({"folders": folders.len(), "items": hits.iter().map(|(p, snip)| item_json(f, p, format!("…{snip}…"), cache.get(&cache_key(p)).map(String::as_str).unwrap_or(""))).collect::<Vec<_>>()})
         }
+        "fetch_cloud" => {
+            let folders = match a["folder"].as_str() { Some(x) if !x.is_empty() => vec![PathBuf::from(x)], _ => all_folders() };
+            let mut moved = 0;
+            for root in &folders {
+                moved += sorter::fetch_and_sort(root, progress, log).len();
+            }
+            unread_summary(true);
+            json!({"moved": moved, "left": unread_summary(false)})
+        }
         "undo" => {
             let (n, had) = sorter::undo_last();
             json!({"moved": n, "had": had})
@@ -164,7 +193,7 @@ fn run_job(kind: &str, a: &Value, f: &Path, progress: ocr::Progress, log: ocr::L
 
 fn start_job(kind: String, args: Value) -> String {
     let id = format!("{:08x}", rand_u32());
-    JOBS.lock().unwrap().insert(id.clone(), Job { done: false, progress: (0, 0), message: String::new(), result: None, error: None });
+    JOBS.lock().unwrap().insert(id.clone(), Job { kind: kind.clone(), done: false, progress: (0, 0), message: String::new(), result: None, error: None });
     let f = folder();
     let jid = id.clone();
     std::thread::spawn(move || {
@@ -371,7 +400,8 @@ fn dispatch(method: &str, a: &[Value]) -> Result<Value, String> {
         "remove_folder" => remove_folder(&s_arg(a, 0)),
         "activity" => {
             let limit = a.first().and_then(Value::as_u64).unwrap_or(1500) as usize;
-            json!({"entries": activity::recent(limit), "status": background::status_json()})
+            let jobs: Vec<Value> = JOBS.lock().unwrap().values().filter(|j| !j.done).map(|j| json!({"kind": j.kind, "progress": [j.progress.0, j.progress.1], "message": j.message})).collect();
+            json!({"entries": activity::recent(limit), "status": background::status_json(), "jobs": jobs, "unread": unread_summary(false)})
         }
         "undo_one" => {
             sorter::undo_one(Path::new(&s_arg(a, 0)), Path::new(&s_arg(a, 1)))?;
@@ -401,6 +431,59 @@ async fn call(method: String, args: Vec<Value>) -> Result<Value, String> {
 
 // ---------- thumb:// image scheme ----------
 
+/// A few worker threads answer image requests, newest request first (what's on screen
+/// right now), instead of one thread per request. Online-only OneDrive files have their
+/// own lane so they never hold up local ones.
+mod thumbq {
+    use once_cell::sync::Lazy;
+    use std::sync::{Condvar, Mutex};
+    use tauri::UriSchemeResponder;
+
+    pub struct Q {
+        items: Mutex<Vec<(String, UriSchemeResponder)>>,
+        cv: Condvar,
+    }
+    fn new_q(workers: usize, com: bool) -> &'static Q {
+        let q: &'static Q = Box::leak(Box::new(Q { items: Mutex::new(Vec::new()), cv: Condvar::new() }));
+        for _ in 0..workers {
+            std::thread::spawn(move || {
+                if com {
+                    unsafe {
+                        let _ = windows::Win32::System::Com::CoInitializeEx(None, windows::Win32::System::Com::COINIT_APARTMENTTHREADED);
+                    }
+                }
+                loop {
+                    let (uri, r) = {
+                        let mut g = q.items.lock().unwrap();
+                        while g.is_empty() {
+                            g = q.cv.wait(g).unwrap();
+                        }
+                        g.pop().unwrap()
+                    };
+                    let resp = std::panic::catch_unwind(|| super::image_response(&uri))
+                        .unwrap_or_else(|_| tauri::http::Response::builder().status(500).body(Vec::new()).unwrap());
+                    r.respond(resp);
+                }
+            });
+        }
+        q
+    }
+    static LOCAL: Lazy<&'static Q> = Lazy::new(|| new_q(4, false));
+    static CLOUD: Lazy<&'static Q> = Lazy::new(|| new_q(2, true));
+
+    pub fn submit(uri: String, r: UriSchemeResponder) {
+        let cloud = super::query_path(&uri).map(|p| crate::ocr::online_only(&p)).unwrap_or(false);
+        let q: &Q = if cloud { &CLOUD } else { &LOCAL };
+        q.items.lock().unwrap().push((uri, r));
+        q.cv.notify_one();
+    }
+}
+
+fn query_path(uri: &str) -> Option<PathBuf> {
+    let (_, q) = uri.split_once('?')?;
+    q.split('&').filter_map(|kv| kv.split_once('=')).find(|(k, _)| *k == "p").map(|(_, v)| PathBuf::from(urlencoding::decode(v).map(|c| c.into_owned()).unwrap_or_default()))
+}
+
 fn image_response(uri: &str) -> Response<Vec<u8>> {
     let q: HashMap<String, String> = uri
         .split_once('?')
@@ -422,6 +505,8 @@ fn image_response(uri: &str) -> Response<Vec<u8>> {
         (png, "image/png".to_string())
     } else if size == 0 {
         (std::fs::read(&p).ok(), format!("image/{}", if ext == "jpg" { "jpeg" } else { ext.as_str() }))
+    } else if ocr::online_only(&p) {
+        (tools::cloud_thumb_bytes(&p, size), "image/jpeg".to_string())
     } else {
         (tools::thumb_bytes(&p, size), "image/jpeg".to_string())
     };
@@ -610,8 +695,7 @@ pub fn run_app(show_window: bool, start_folder: Option<PathBuf>, preview: bool) 
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| second_launch(app, argv)))
         .invoke_handler(tauri::generate_handler![call])
         .register_asynchronous_uri_scheme_protocol("thumb", |_ctx, req, responder| {
-            let uri = req.uri().to_string();
-            std::thread::spawn(move || responder.respond(image_response(&uri)));
+            thumbq::submit(req.uri().to_string(), responder);
         })
         .setup(move |app| {
             let _ = APP.set(app.handle().clone());
