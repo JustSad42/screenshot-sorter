@@ -269,6 +269,19 @@ input[type=range]{accent-color:var(--accent);width:160px}
 .cols .c small{font-size:11px;color:var(--text-3)}
 .dupgroup{display:flex;gap:10px;overflow-x:auto;padding:10px 0;border-top:1px solid var(--line)}
 .dupgroup .card{width:180px;flex:none}
+.dupgroup .card .where{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.optrow{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:13px;margin:-2px 0 10px}
+.samples{display:flex;gap:6px;margin:10px 0 2px;overflow:hidden}
+.samples img{width:72px;height:46px;object-fit:cover;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);flex:none}
+.ideas{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:12px;margin-top:12px}
+.idea{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel)}
+.idea .top{display:flex;align-items:center;gap:8px}
+.idea .top input{flex:1;min-width:0;font-weight:600}
+.idea .cnt{color:var(--text-3);font-size:12.5px;flex:none}
+.idea .words{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.idea .words label{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;cursor:pointer;background:var(--panel-2)}
+.idea .words label.main{border-color:var(--accent);color:var(--accent)}
+.idea .foot{display:flex;justify-content:flex-end;margin-top:10px}
 .keep{position:absolute;top:8px;right:8px;font-size:11px;font-weight:650;background:var(--good);color:#fff;border-radius:999px;padding:2px 8px}
 .extra{position:absolute;top:8px;right:8px;font-size:11px;font-weight:650;background:rgba(15,17,21,.65);color:#fff;border-radius:999px;padding:2px 8px}
 .meter{height:10px;border-radius:999px;background:var(--panel-2);overflow:hidden;margin:10px 0 6px}
@@ -513,6 +526,9 @@ const ICONS = {
   open:'<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
   x:'<path d="M18 6 6 18M6 6l12 12"/>', left:'<path d="m15 18-6-6 6-6"/>', right:'<path d="m9 18 6-6-6-6"/>',
   plus:'<path d="M12 5v14M5 12h14"/>', sparkle:'<path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  camera:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  idea:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   activity:'<path d="M3 12h4l3-8 4 16 3-8h4"/>', pause:'<path d="M9 5v14M15 5v14"/>', folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   alert:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
@@ -1155,6 +1171,10 @@ function renderCategories(){
   const c = data.categories.find(x => x.name === S.editCat);
   el.innerHTML = `<div class="vh"><div><h1>Categories</h1><div class="sub">A screenshot goes to the category whose keywords add up to the most points. Drag to reorder - higher wins ties.</div></div>
     <div class="actions"><button class="btn primary" id="catAdd">${icon('plus')}New category</button></div></div>
+    <div class="box" style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">${icon('idea')}Ideas from Other</h2>
+      <button class="btn" data-busy id="ideaFind" style="margin-left:auto">${icon('search')}${S.ideas ? 'Look again' : 'Find ideas'}</button></div>
+      <p class="desc" style="margin-bottom:0">Words that show up in many “Other” screenshots but rarely in sorted ones. Make one a category and the matching screenshots move there.</p>
+      <div id="ideaHost">${S.ideas ? ideasHtml() : ''}</div></div>
     <div class="cat-wrap"><div class="cat-list" id="catList">${data.categories.map((x, i) => `
       <div class="cat-item ${x.name===S.editCat?'on':''}" draggable="true" data-i="${i}"><span class="sw" style="background:${color(x.name)}"></span>
       <span class="nm">${esc(x.name)}</span><span class="k">${x.keywords.length}</span></div>`).join('')}</div>
@@ -1179,6 +1199,17 @@ function renderCategories(){
     it.ondrop = e => { e.preventDefault(); const from = +e.dataTransfer.getData('text/plain'), to = +it.dataset.i;
       if (isNaN(from) || from === to) return; const [m] = data.categories.splice(from, 1); data.categories.splice(to, 0, m); save(); };
   });
+  $('#ideaFind').onclick = async () => { const r = await job('ideas', {}, 'Looking through Other…'); S.ideas = r; renderCategories();
+    if (!r.ideas.length) toast('No clear ideas', r.other < 20 ? 'There are only a few screenshots in Other.' : 'Nothing stands out in Other right now.'); };
+  el.querySelectorAll('[data-mk]').forEach(b => b.onclick = async () => {
+    const card = b.closest('.idea'), name = $('input[type=text]', card).value.trim();
+    const words = [...card.querySelectorAll('.words input:checked')].map(x => x.value);
+    if (!name || !words.length) return toast('Give it a name and keep at least one word', '', {err:true});
+    try { const r = await job('make_category', {name, words}, `Making “${name}”…`);
+      S.rules = r.rules; S.colors = r.rules.colors; S.editCat = name; S.ideas.ideas = S.ideas.ideas.filter(x => x.word !== card.dataset.w); renderCategories();
+      toast(`Made “${name}”`, r.moved ? `Moved ${r.moved} screenshot${r.moved===1?'':'s'} from Other. Undo all from Activity.` : 'No screenshots in Other matched yet.'); }
+    catch (e) { if (String(e) !== 'Error: busy') toast("Couldn't make it", String(e), {err:true}); }
+  });
   $('#catAdd').onclick = async () => { const n = await prompt2('New category', 'Name for the new category:'); if (!n) return;
     data.categories.push({name: n, min_score: 2, keywords: []}); S.editCat = n; save(); };
   if (!c) return;
@@ -1198,12 +1229,26 @@ function renderCategories(){
   $('#kwAdd').onclick = add; $('#kwNew').onkeydown = e => { if (e.key === 'Enter') add(); };
 }
 
+function ideasHtml(){
+  const r = S.ideas;
+  if (!r.ideas.length) return `<p class="muted" style="margin-top:10px">Nothing stands out in Other (${r.other.toLocaleString()} screenshots).</p>`;
+  return `<div class="ideas">${r.ideas.map(x => `<div class="idea" data-w="${esc(x.word)}">
+    <div class="top"><input type="text" class="field" value="${esc(x.name)}" title="Category name"><span class="cnt">${x.count.toLocaleString()} screenshot${x.count===1?'':'s'}</span></div>
+    <div class="words"><label class="main"><input type="checkbox" value="${esc(x.word)}" checked>${esc(x.word)}</label>${x.also.map(w => `<label><input type="checkbox" value="${esc(w)}">${esc(w)}</label>`).join('')}</div>
+    <div class="samples">${x.samples.map(p => `<img loading="lazy" src="${img(p, 160)}" title="${esc(baseName(p))}">`).join('')}</div>
+    <div class="foot"><button class="btn primary mini" data-busy data-mk>${icon('plus')}Make category</button></div></div>`).join('')}</div>`;
+}
+
 /* ---------- clean up ---------- */
 async function renderCleanup(){
-  const el = $('#v-cleanup');
+  const el = $('#v-cleanup'); S.fmt = S.fmt || 'avif';
   el.innerHTML = `<div class="vh"><div><h1>Clean up</h1><div class="sub">Free up space and remove copies. Anything removed goes to the Recycle Bin.</div></div></div>
     <div class="cards">
-      <div class="box"><h2>${icon('copy')}Duplicates</h2><p class="desc">Finds screenshots that look the same. The best copy in each group is kept.</p>
+      <div class="box"><h2>${icon('camera')}Photos</h2><p class="desc">Camera photos aren't screenshots. This finds pictures taken with a camera or phone (they carry camera details) and moves them to <b>Photos</b>, in a folder per month. New photos are filed there automatically.</p>
+        <div id="phHost" style="color:var(--text-2)"></div>
+        <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-busy id="phScan">${icon('search')}Find photos</button><button class="btn primary" data-busy id="phMove" ${S.photoScan?.count ? '' : 'disabled'}>${icon('move')}Move to Photos</button></div></div>
+      <div class="box"><h2>${icon('copy')}Duplicates</h2><p class="desc">Finds pictures that look the same. The best copy in each group is kept: the sharpest, then the one already in a category.</p>
+        <label class="optrow"><input type="checkbox" id="dupAll" ${S.dupAll === false ? '' : 'checked'}> Compare across all watched folders</label>
         <div style="display:flex;gap:8px"><button class="btn primary" data-busy id="dupFind">Find duplicates</button><button class="btn" data-busy id="dupRec" ${S.dups.length?'':'disabled'}>Recycle extra copies</button></div>
         <div id="dupHost" style="margin-top:12px"></div></div>
       <div class="box"><h2>${icon('zip')}Save space</h2>
@@ -1216,7 +1261,18 @@ async function renderCleanup(){
         <div id="bkHost" style="margin-top:14px;font-size:13px;color:var(--text-2)"></div></div>
     </div>`;
   renderDups();
-  $('#dupFind').onclick = async () => { const r = await job('dups', {}, 'Comparing screenshots…'); S.dups = r.groups; renderCleanup();
+  const renderPhotos = () => { const r = S.photoScan, h = $('#phHost'); if (!h) return;
+    if (!r) { h.innerHTML = ''; return; }
+    h.innerHTML = r.count ? `<b>${r.count.toLocaleString()}</b> camera photo${r.count===1?'':'s'} filed as screenshots or loose (${r.folders.map(([n, c]) => `${esc(n)}: ${c.toLocaleString()}`).join(', ')})
+      <div class="samples">${r.samples.map(p => `<img loading="lazy" src="${img(p, 160)}" title="${esc(baseName(p))}">`).join('')}</div>` : 'No camera photos outside Photos.';
+  };
+  renderPhotos();
+  $('#phScan').onclick = async () => { S.photoScan = await job('photos_scan', {}, 'Looking for camera photos…'); renderCleanup(); };
+  $('#phMove').onclick = async () => { const n = S.photoScan?.count || 0;
+    if (!await confirmBox('Move photos', `Move ${n.toLocaleString()} camera photos to Photos (a folder per month)? It's one batch you can undo from Activity.`, 'Move')) return;
+    const r = await job('photos', {}, 'Moving photos…'); S.photoScan = null; renderCleanup(); toast(`Moved ${r.moved.toLocaleString()} photos to Photos`, 'Undo all from Activity if you change your mind.'); };
+  $('#dupAll').onchange = e => { S.dupAll = e.target.checked; };
+  $('#dupFind').onclick = async () => { const r = await job('dups', {all: S.dupAll !== false}, 'Comparing pictures…'); S.dups = r.groups; renderCleanup();
     toast(r.groups.length ? `${r.groups.length} group${r.groups.length>1?'s':''} of duplicates` : 'No duplicates found'); };
   $('#dupRec').onclick = async () => { const extra = S.dups.flatMap(g => g.slice(1));
     if (!await confirmBox('Recycle extra copies', `Send ${extra.length} extra copies to the Recycle Bin? You can restore them from there.`, 'Recycle', true)) return;
@@ -1258,7 +1314,7 @@ async function renderCleanup(){
 function renderDups(){
   const host = $('#dupHost'); if (!host) return;
   host.innerHTML = S.dups.map(g => `<div class="dupgroup">${g.map((p, i) => `<div class="card" data-p="${esc(p)}"><div class="thumb"><img class="ld" src="${img(p, 360)}">
-    <span class="${i ? 'extra' : 'keep'}">${i ? 'extra' : 'keep'}</span></div><div class="meta"><div class="name">${esc(p.split('\\').pop())}</div></div></div>`).join('')}</div>`).join('');
+    <span class="${i ? 'extra' : 'keep'}">${i ? 'extra' : 'keep'}</span></div><div class="meta"><div class="name" title="${esc(p)}">${esc(p.split('\\').pop())}</div><div class="where">${esc(p.split('\\').slice(-3, -1).join(' › '))}</div></div></div>`).join('')}</div>`).join('');
   host.querySelectorAll('.card').forEach(c => c.ondblclick = () => api('open', c.dataset.p));
 }
 
@@ -1315,6 +1371,7 @@ function renderSettings(){
     <div class="box"><h2>${icon('sort')}Sorting</h2><p class="desc">How files are filed and named.</p>
       <div class="setting"><div class="lab">Month folders<small>League - Stats & Builds / 2026-10 / …</small></div>${sw('month_folders', s.month_folders)}</div>
       <div class="setting"><div class="lab">Readable file names<small>2026-10-13 234220 Chat - Alex.png</small></div>${sw('rename_files', s.rename_files)}</div>
+      <div class="setting"><div class="lab">Photos folder<small>Camera photos go to Photos / year-month instead of a screenshot category.</small></div>${sw('photos_folder', s.photos_folder !== false)}</div>
       <div class="setting"><div class="lab">Sort by look<small>Screenshots without text are matched to similar sorted ones.</small></div>${sw('use_look', s.use_look)}</div>
       <div class="setting"><div class="lab">Learn from Review<small>When you file a screenshot on the Review page, two telling words from it are added to that category.</small></div>${sw('learn_words', s.learn_words !== false)}</div>
       <div class="setting"><div class="lab">Read Arabic text</div>${sw('arabic', (s.languages||[]).includes('ar-SA'))}</div>

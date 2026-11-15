@@ -16,9 +16,13 @@ LIBRARY    Everything already sorted, in this folder or all folders, as a grid o
 SEARCH     The bar at the top searches the text inside every screenshot. Press / to jump to it.
            "Save as album" keeps a search in the sidebar; it updates itself.
 CATEGORIES Add, rename, reorder (drag) categories. Click a keyword's weight to make it a
-           stronger (3) or weaker (1/2) clue.
-CLEAN UP   Find duplicates (extras go to the Recycle Bin) and shrink screenshots to AVIF
-           (much smaller; originals kept in a backup folder) or lossless WebP.
+           stronger (3) or weaker (1/2) clue. "Ideas from Other" suggests new categories from
+           words that keep showing up in Other; "Make category" moves the matching ones.
+CLEAN UP   Photos: camera photos (they carry camera details) move to Photos / year-month.
+           New photos go there automatically (Settings > Sorting > Photos folder).
+           Duplicates across all watched folders (extras go to the Recycle Bin; the copy
+           already in a category is kept) and shrink screenshots to AVIF (much smaller;
+           originals kept in a backup folder) or lossless WebP.
 LOCAL AI   Optional (Settings > Local AI): a model in Ollama on this PC suggests folders for
            leftovers when you sort by hand (Sort page, Review; press A to use its pick).
            It never runs during auto-sort and nothing leaves your PC.

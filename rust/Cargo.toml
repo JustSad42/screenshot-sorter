@@ -1,6 +1,6 @@
 [package]
 name = "screenshot-sorter"
-version = "2.2.1"
+version = "2.3.0"
 edition = "2021"
 description = "Sorts screenshots into folders by what's in them"
 
@@ -25,6 +25,7 @@ trash = "5"
 winreg = "0.55"
 ureq = { version = "3", features = ["json"] }
 sha2 = "0.10"
+kamadak-exif = "0.6"
 base64 = "0.22"
 rfd = "0.15"
 notify-rust = "4"

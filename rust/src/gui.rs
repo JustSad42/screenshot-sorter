@@ -312,7 +312,70 @@ fn run_job(kind: &str, a: &Value, f: &Path, progress: ocr::Progress, log: ocr::L
             json!({"moved": n, "had": had})
         }
         "rename" => json!({"moved": sorter::rename_existing(f, progress, log).len()}),
-        "dups" => json!({"groups": vision::find_duplicates(f, log).iter().map(|g| g.iter().map(|p| p.to_string_lossy()).collect::<Vec<_>>()).collect::<Vec<_>>()}),
+        "dups" => {
+            let groups = if a["all"].as_bool() == Some(false) { vision::find_duplicates(f, log) } else { vision::find_duplicates_multi(&all_folders(), log) };
+            json!({"groups": groups.iter().map(|g| g.iter().map(|p| p.to_string_lossy()).collect::<Vec<_>>()).collect::<Vec<_>>()})
+        }
+        "photos_scan" => {
+            log("Looking for camera photos...");
+            let found = sorter::misfiled_photos(&all_folders());
+            let mut by: Vec<(String, usize)> = Vec::new();
+            for (root, _, _) in &found {
+                let n = root.file_name().unwrap_or_default().to_string_lossy().to_string();
+                match by.iter_mut().find(|b| b.0 == n) { Some(b) => b.1 += 1, None => by.push((n, 1)) }
+            }
+            let samples: Vec<String> = found.iter().rev().take(8).map(|(_, p, _)| p.to_string_lossy().to_string()).collect();
+            json!({"count": found.len(), "folders": by, "samples": samples})
+        }
+        "photos" => json!({"moved": sorter::file_photos(&all_folders(), progress, log).len()}),
+        "ideas" => {
+            log("Looking through Other...");
+            let rules = rules::load();
+            let cache = ocr::load_cache();
+            let (mut other, mut rest) = (Vec::new(), Vec::new());
+            for root in all_folders() {
+                for p in sorter::all_images(&root) {
+                    let Some(t) = cache.get(&cache_key(&p)) else { continue };
+                    match sorter::category_of(&root, &p) {
+                        Some(c) if c == rules.fallback => other.push((p, t.clone())),
+                        Some(c) if c != rules.no_text && c != crate::photo::PHOTOS => rest.push(t.clone()),
+                        _ => {}
+                    }
+                }
+            }
+            json!({"other": other.len(), "ideas": crate::ideas::ideas(&other, &rest, &rules, 8)})
+        }
+        "make_category" => {
+            // add the category (or more words to an existing one), then file the Other screenshots it now claims
+            let name = a["name"].as_str().unwrap_or("").trim().to_string();
+            if name.is_empty() {
+                return Err("The category needs a name.".into());
+            }
+            let words: Vec<String> = a["words"].as_array().map(|w| w.iter().filter_map(Value::as_str).map(String::from).collect()).unwrap_or_default();
+            let (main, also) = words.split_first().ok_or("Pick at least one word.")?;
+            // add_keywords turns each plain word into a whole-word keyword
+            rules::add_keywords(&name, &[main.trim().to_string()], 2.0)?;
+            if !also.is_empty() {
+                rules::add_keywords(&name, &also.iter().map(|w| w.trim().to_string()).collect::<Vec<_>>(), 1.0)?;
+            }
+            let rules = rules::load();
+            let cache = ocr::load_cache();
+            let mut paths = Vec::new();
+            for root in all_folders() {
+                for p in sorter::all_images(&root) {
+                    if sorter::category_of(&root, &p).as_deref() != Some(rules.fallback.as_str()) {
+                        continue;
+                    }
+                    if let Some(t) = cache.get(&cache_key(&p)) {
+                        if sorter::judge(&rules, &p, t).category == name {
+                            paths.push(p);
+                        }
+                    }
+                }
+            }
+            let moved = sorter::move_to_category(f, &paths, &name).len();
+            json!({"moved": moved, "rules": rules_json()})
+        }
         "recycle" => {
             let paths: Vec<PathBuf> = paths_arg(a.get("paths")).into_iter().filter(|p| allowed(p)).collect();
             json!({"removed": tools::recycle(&paths)})

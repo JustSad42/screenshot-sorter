@@ -28,10 +28,13 @@ JPEG XL screenshots, install the free AV1 and JPEG XL extensions from the Micros
 - **Sort:** preview where each screenshot would go, then move them. Drag a card onto another
   category to fix it, and "Teach it" turns that fix into new keywords.
 - **Categories:** weighted keyword rules (`categories.json`) you can edit in the app.
+  "Ideas from Other" suggests new categories from words that keep showing up in Other.
+- **Photos:** camera photos (EXIF make/model) go to `Photos/YYYY-MM` instead of a screenshot
+  category. Clean up can move the ones already filed as screenshots.
 - **Library:** browse everything already sorted. You can re-file screenshots or give them
   readable names, and any move can be undone.
 - **Search:** search the text inside every screenshot.
-- **Clean up:** find duplicates, or shrink screenshots.
+- **Clean up:** find duplicates across all watched folders, or shrink screenshots.
   - AVIF is about 80% smaller. The originals are kept in a backup folder.
   - Lossless WebP keeps every pixel the same.
 - **Insights:** counts by category and month, plus an HTML report with extra League of Legends
@@ -111,6 +114,8 @@ Installed copies pick up the new release by themselves.
 | `rust/src/ocr.rs` | Windows OCR in parallel, and the text cache |
 | `rust/src/rules.rs` | Weighted keyword rules and "teach it" suggestions |
 | `rust/src/vision.rs` | Image fingerprints for look-based guesses and duplicates |
+| `rust/src/photo.rs` | Camera photo detection (EXIF) and `Photos/YYYY-MM` paths |
+| `rust/src/ideas.rs` | New-category ideas from words common in Other |
 | `rust/src/imageio.rs` | Image decoding (with Windows codecs for AVIF/JXL/HEIC) and AVIF encoding |
 | `rust/src/tools.rs` | Recycle Bin, AVIF/WebP conversion, thumbnails |
 | `rust/src/reports.rs` | HTML report |

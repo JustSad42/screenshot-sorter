@@ -98,7 +98,22 @@ fn ocr_one(engine: &OcrEngine, path: &Path) -> windows::core::Result<String> {
     let file = StorageFile::GetFileFromPathAsync(&HSTRING::from(win_path(path)))?.get()?;
     let stream = file.OpenAsync(FileAccessMode::Read)?.get()?;
     let decoder = BitmapDecoder::CreateAsync(&stream)?.get()?;
-    let bitmap = decoder.GetSoftwareBitmapAsync()?.get()?;
+    let max = OcrEngine::MaxImageDimension()?;
+    let (w, h) = (decoder.PixelWidth()?, decoder.PixelHeight()?);
+    let bitmap = if w > max || h > max {
+        // too big for the OCR engine: read a scaled-down copy instead
+        use windows::Graphics::Imaging::{BitmapAlphaMode, BitmapInterpolationMode, BitmapPixelFormat, BitmapTransform, ColorManagementMode, ExifOrientationMode};
+        let scale = max as f64 / w.max(h) as f64;
+        let t = BitmapTransform::new()?;
+        t.SetScaledWidth(((w as f64 * scale) as u32).clamp(1, max))?;
+        t.SetScaledHeight(((h as f64 * scale) as u32).clamp(1, max))?;
+        t.SetInterpolationMode(BitmapInterpolationMode::Fant)?;
+        decoder
+            .GetSoftwareBitmapTransformedAsync(BitmapPixelFormat::Bgra8, BitmapAlphaMode::Premultiplied, &t, ExifOrientationMode::IgnoreExifOrientation, ColorManagementMode::DoNotColorManage)?
+            .get()?
+    } else {
+        decoder.GetSoftwareBitmapAsync()?.get()?
+    };
     let result = engine.RecognizeAsync(&bitmap)?.get()?;
     let mut parts = Vec::new();
     for line in result.Lines()? {

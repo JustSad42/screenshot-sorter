@@ -160,6 +160,9 @@ fn readable_name(p: &Path, category: &str, text: &str, s: &Settings) -> String {
 }
 
 pub fn target_path(folder: &Path, p: &Path, category: &str, text: &str, s: &Settings) -> PathBuf {
+    if category == crate::photo::PHOTOS {
+        return crate::photo::target(folder, p, crate::photo::camera(p).as_ref(), s.rename_files);
+    }
     let mut dir = folder.join(category);
     if s.month_folders {
         dir = dir.join(taken_at(p).format("%Y-%m").to_string());
@@ -333,9 +336,19 @@ pub fn classify_files(files: &[PathBuf], folder: &Path, progress: Progress, log:
 }
 
 pub fn classify_files_ex(files: &[PathBuf], folder: &Path, progress: Progress, log: Log, allow_claude: bool, download: bool) -> Vec<Item> {
+    let s = settings::load();
+    // camera photos aren't screenshots: they go to Photos/YYYY-MM without reading text
+    let mut photos: Vec<Item> = Vec::new();
+    let mut shots: Vec<PathBuf> = Vec::new();
+    for p in files {
+        match s.photos_folder.then(|| crate::photo::camera(p)).flatten() {
+            Some(cam) => photos.push(Item { path: p.clone(), category: crate::photo::PHOTOS.into(), how: crate::photo::reason(&cam), conf: "strong".into(), ..Default::default() }),
+            None => shots.push(p.clone()),
+        }
+    }
+    let files = &shots[..];
     let texts = ocr::ocr_files_ex(files, progress, log, download);
     let rules = rules::load();
-    let s = settings::load();
     let mut items: Vec<Item> = files
         .iter()
         .filter_map(|p| texts.get(p).map(|t| judge(&rules, p, t)))
@@ -374,6 +387,7 @@ pub fn classify_files_ex(files: &[PathBuf], folder: &Path, progress: Progress, l
             Err(e) => log(&format!("Claude step skipped: {e}")),
         }
     }
+    items.extend(photos);
     items
 }
 
@@ -403,6 +417,31 @@ pub fn local_ai_pass(items: &mut [Item], progress: Progress, log: Log) {
 
 pub fn make_plan(folder: &Path, progress: Progress, log: Log, allow_claude: bool) -> Vec<Item> {
     classify_files(&loose_images(folder), folder, progress, log, allow_claude)
+}
+
+/// Camera photos that are filed as screenshots (or loose): (root, path, camera)
+pub fn misfiled_photos(folders: &[PathBuf]) -> Vec<(PathBuf, PathBuf, crate::photo::Camera)> {
+    use rayon::prelude::*;
+    let all: Vec<(PathBuf, PathBuf)> = folders
+        .iter()
+        .flat_map(|root| all_images(root).into_iter().map(move |p| (root.clone(), p)))
+        .filter(|(root, p)| category_of(root, p).as_deref() != Some(crate::photo::PHOTOS))
+        .collect();
+    all.into_par_iter().filter_map(|(root, p)| crate::photo::camera(&p).map(|c| (root, p, c))).collect()
+}
+
+/// Move camera photos into Photos/YYYY-MM (undoable, as one batch). -> moves made
+pub fn file_photos(folders: &[PathBuf], progress: Progress, log: Log) -> Vec<(PathBuf, PathBuf)> {
+    log("Looking for camera photos...");
+    let found = misfiled_photos(folders);
+    progress(found.len(), found.len());
+    let s = settings::load();
+    let planned: Vec<Planned> = found
+        .iter()
+        .map(|(root, p, cam)| (p.clone(), crate::photo::target(root, p, Some(cam), s.rename_files), crate::photo::PHOTOS.to_string(), crate::photo::reason(cam), "strong".to_string()))
+        .collect();
+    log(&format!("Moving {} photo(s)...", planned.len()));
+    move_files(planned, "move", "you")
 }
 
 /// Images that were never read: online-only OneDrive files that are loose or in the

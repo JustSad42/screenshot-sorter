@@ -201,7 +201,25 @@ pub fn self_test(folder: &Path, rules: &Rules, min_conf: f64) -> Option<(usize, 
 /// Groups of images that look the same. Each group is best-first: biggest resolution,
 /// then biggest file, then newest.
 pub fn find_duplicates(folder: &Path, log: Log) -> Vec<Vec<PathBuf>> {
-    let paths = all_images(folder);
+    find_duplicates_in(all_images(folder), log)
+}
+
+/// Duplicates among the images of several folders (e.g. every watched folder).
+pub fn find_duplicates_multi(folders: &[PathBuf], log: Log) -> Vec<Vec<PathBuf>> {
+    let mut paths: Vec<PathBuf> = folders.iter().flat_map(|f| all_images(f)).collect();
+    paths.sort();
+    paths.dedup();
+    find_duplicates_in(paths, log)
+}
+
+fn find_duplicates_in(paths: Vec<PathBuf>, log: Log) -> Vec<Vec<PathBuf>> {
+    let rules = crate::rules::load();
+    // 0 = in a real category, 1 = in Other / No Text, 2 = loose
+    let rank = |p: &Path| match settings::root_of(p).and_then(|r| category_of(&r, p)) {
+        Some(c) if c != rules.fallback && c != rules.no_text => 0u8,
+        Some(_) => 1,
+        None => 2,
+    };
     let fps = fingerprints(&paths, log);
     let items: Vec<(&PathBuf, &Fp, u64)> =
         paths.iter().filter_map(|p| fps.get(p).map(|f| (p, f, u64::from_str_radix(&f.h, 16).unwrap_or(0)))).collect();
@@ -247,7 +265,7 @@ pub fn find_duplicates(folder: &Path, log: Log) -> Vec<Vec<PathBuf>> {
             g.sort_by(|&a, &b| {
                 let area = |i: usize| items[i].1.wh[0] as u64 * items[i].1.wh[1] as u64;
                 let (ma, mb) = (meta(items[a].0), meta(items[b].0));
-                area(b).cmp(&area(a)).then(mb.0.cmp(&ma.0)).then(mb.1.cmp(&ma.1))
+                area(b).cmp(&area(a)).then(mb.0.cmp(&ma.0)).then(rank(items[a].0).cmp(&rank(items[b].0))).then(mb.1.cmp(&ma.1))
             });
             g.into_iter().map(|i| items[i].0.clone()).collect()
         })
