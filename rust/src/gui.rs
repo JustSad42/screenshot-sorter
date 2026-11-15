@@ -114,7 +114,8 @@ fn weak_moves() -> Vec<(PathBuf, Value)> {
         .filter_map(|e| {
             let to = PathBuf::from(e["to"].as_str()?);
             let key = to.to_string_lossy().to_lowercase();
-            (to.exists() && !ok.contains(&key) && seen.insert(key)).then_some((to, e))
+            // only files still in a watched folder
+            (to.exists() && allowed(&to) && !ok.contains(&key) && seen.insert(key)).then_some((to, e))
         })
         .collect()
 }
@@ -222,7 +223,11 @@ fn library_file() -> PathBuf {
 
 fn run_job(kind: &str, a: &Value, f: &Path, progress: ocr::Progress, log: ocr::Log) -> Result<Value, String> {
     Ok(match kind {
-        "preview" => json!({"items": sorter::make_plan(f, progress, log, true).iter().map(|i| i.to_json()).collect::<Vec<_>>()}),
+        "preview" => {
+            let mut items = sorter::make_plan(f, progress, log, true);
+            sorter::local_ai_pass(&mut items, progress, log); // you started this sort yourself
+            json!({"items": items.iter().map(|i| i.to_json()).collect::<Vec<_>>()})
+        }
         "sort" => {
             let plan: Vec<sorter::Item> = match a.get("plan").and_then(Value::as_array) {
                 Some(planned) => {
@@ -242,7 +247,11 @@ fn run_job(kind: &str, a: &Value, f: &Path, progress: ocr::Progress, log: ocr::L
                         })
                         .collect()
                 }
-                None => sorter::make_plan(f, progress, log, true),
+                None => {
+                    let mut items = sorter::make_plan(f, progress, log, true);
+                    sorter::local_ai_pass(&mut items, progress, log);
+                    items
+                }
             };
             json!({"moved": sorter::apply_plan(f, &plan, "you").len()})
         }
@@ -573,6 +582,22 @@ fn dispatch(method: &str, a: &[Value]) -> Result<Value, String> {
         "league" => crate::trackers::league(&all_folders()),
         "youtube" => crate::trackers::youtube(&all_folders()),
         "suggest_folders" => suggest_folders(),
+        "local_models" => match crate::localai::models() {
+            Ok(m) => json!({"ok": true, "models": m}),
+            Err(e) => json!({"ok": false, "error": e}),
+        },
+        "local_suggest" => {
+            // Review page: what does the local model think this one is?
+            let p = PathBuf::from(s_arg(a, 0));
+            if !allowed(&p) {
+                return Err("Not in a watched folder.".into());
+            }
+            let s = settings::load();
+            let model = crate::localai::model(&s).ok_or("Turn on the local model in Settings first.")?;
+            let text = ocr::load_cache().get(&cache_key(&p)).cloned().unwrap_or_default();
+            let (c, why) = crate::localai::ask(&model, &p, &text, &rules::load())?;
+            json!({"c": c, "why": why, "model": model})
+        }
         "pick_folder_path" => match rfd::FileDialog::new().set_directory(folder()).pick_folder() {
             Some(p) => json!(p.to_string_lossy()),
             None => Value::Null,

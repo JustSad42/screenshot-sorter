@@ -20,6 +20,7 @@ mod settings;
 mod sorter;
 mod tools;
 mod trackers;
+mod localai;
 mod updater;
 mod vision;
 

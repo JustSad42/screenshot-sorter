@@ -65,6 +65,10 @@ JPEG XL screenshots, install the free AV1 and JPEG XL extensions from the Micros
   watch time and subscribers (YouTube Studio) from your screenshots and charts them.
 - **First-run setup:** pick folders and see exactly what would move before anything does.
   Adding a folder later shows the same preview.
+- **Local AI (optional):** a vision model in [Ollama](https://ollama.com) on your PC (for example
+  `gemma3` or `gemma4`) suggests a folder for screenshots the rules couldn't place. Nothing leaves
+  your computer. It only runs when you sort by hand (Sort page, Review page; press A to accept
+  its pick), never during auto-sort. Turn it on in Settings > Local AI.
 - **Explorer menu:** a "Sort with Screenshot Sorter" right-click menu on folders.
 
 Auto-sort is off on a new install until you turn it on in Settings.

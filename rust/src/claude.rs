@@ -54,7 +54,7 @@ fn image_block(p: &Path) -> Result<Value, String> {
         "data": base64::engine::general_purpose::STANDARD.encode(buf)}}))
 }
 
-fn category_list(rules: &Rules) -> String {
+pub(crate) fn category_list(rules: &Rules) -> String {
     let mut lines: Vec<String> = rules
         .cats
         .iter()

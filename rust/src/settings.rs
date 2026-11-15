@@ -59,6 +59,9 @@ pub struct Settings {
     pub albums: Vec<Album>,
     /// the Review page adds a couple of telling words to the category you pick
     pub learn_words: bool,
+    /// ask a model in Ollama (on this PC) about leftovers - only when sorting by hand
+    pub local_ai: bool,
+    pub local_model: String,
     pub folder: String,
     pub month_folders: bool,
     pub rename_files: bool,
@@ -89,6 +92,8 @@ impl Default for Settings {
             auto_avif_days: 0,
             albums: vec![],
             learn_words: true,
+            local_ai: false,
+            local_model: String::new(),
             folder: String::new(),
             month_folders: false,
             rename_files: false,

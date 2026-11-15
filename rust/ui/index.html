@@ -396,6 +396,10 @@ input[type=range]{accent-color:var(--accent);width:160px}
 .key .sw{width:9px;height:9px;border-radius:3px;flex:none}
 .key span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .key.ok{border-color:rgba(12,163,12,.45)}
+.key.ai{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.rv-ai{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:9px 12px;border-radius:10px;background:var(--accent-soft);font-size:13px}
+.rv-ai .spin{width:13px;height:13px;border:2px solid var(--accent);border-right-color:transparent;border-radius:50%;animation:rvspin .8s linear infinite}
+@keyframes rvspin{to{transform:rotate(360deg)}}
 .rv-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;color:var(--text-3);font-size:12.5px}
 /* timeline */
 .tl{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:18px;align-items:start}
@@ -1315,6 +1319,9 @@ function renderSettings(){
       <div class="setting"><div class="lab">Learn from Review<small>When you file a screenshot on the Review page, two telling words from it are added to that category.</small></div>${sw('learn_words', s.learn_words !== false)}</div>
       <div class="setting"><div class="lab">Read Arabic text</div>${sw('arabic', (s.languages||[]).includes('ar-SA'))}</div>
       <div class="setting"><div class="lab">Your names<small>Left out of file names for chats.</small></div><input class="field" id="names" value="${esc((s.your_names||[]).join(', '))}" style="width:180px"></div></div>
+    <div class="box"><h2>${icon('robot')}Local AI (optional)</h2><p class="desc">A model in Ollama on this PC looks at screenshots the rules couldn't place. Nothing leaves your computer. It only runs when you sort by hand (Sort page and Review), never during auto-sort.</p>
+      <div class="setting"><div class="lab">Ask the local model about leftovers<small id="lmStat">Checking Ollama…</small></div>${sw('local_ai', s.local_ai)}</div>
+      <div class="setting"><div class="lab">Model<small>Models that can see images work best.</small></div><select class="field" id="lmSel" style="width:200px"><option>${esc(s.local_model || '…')}</option></select></div></div>
     <div class="box"><h2>${icon('robot')}Claude (optional)</h2><p class="desc">For screenshots still unsorted after the steps above. Only those are sent (downscaled) to Anthropic's API and cost a fraction of a cent each on your API account.</p>
       <div class="setting"><div class="lab">Ask Claude about leftovers</div>${sw('claude_enabled', s.claude_enabled)}</div>
       <div class="setting"><div class="lab">API key<small>${s.has_claude_key ? 'A key is saved. Type a new one to replace it.' : 'Or set ANTHROPIC_API_KEY in Windows.'}</small></div>
@@ -1332,8 +1339,11 @@ function renderSettings(){
     const r = await api('save_settings', vals); S.settings = r.settings; S.bg = r.background; renderBg(); applyTheme();
     r.warnings?.forEach(w => toast('Heads up', w, {err:true})); toast(msg);
   };
+  loadLocalModels(el);
   el.querySelectorAll('.switch input').forEach(i => i.onchange = () => {
-    if (i.dataset.k === 'arabic') save({languages: i.checked ? ['en-US','ar-SA'] : ['en-US']});
+    if (i.dataset.k === 'local_ai' && i.checked && !S.settings.local_model && S.localModels?.[0]) save({local_ai: true, local_model: S.localModels[0].name}, `Local AI on, using ${S.localModels[0].name}`);
+    else if (i.dataset.k === 'local_ai') save({local_ai: i.checked}, i.checked ? 'Local AI on: it helps when you sort by hand' : 'Local AI off');
+    else if (i.dataset.k === 'arabic') save({languages: i.checked ? ['en-US','ar-SA'] : ['en-US']});
     else save({[i.dataset.k]: i.checked});
   });
   el.querySelectorAll('[data-fi]').forEach(seg => seg.querySelectorAll('button').forEach(b => b.onclick = async () => {
@@ -1383,6 +1393,44 @@ function renderUpd(){
 }
 
 
+/* ---------- local AI (Ollama) ---------- */
+async function loadLocalModels(el){
+  const r = await api('local_models').catch(e => ({ok: false, error: String(e)}));
+  const sel = $('#lmSel', el), stat = $('#lmStat', el); if (!sel) return;
+  if (!r.ok || !r.models.length) {
+    S.localModels = [];
+    stat.textContent = r.ok ? 'Ollama is running but has no chat models. Install one, e.g. “ollama pull gemma3”.' : r.error;
+    sel.disabled = true; return;
+  }
+  S.localModels = r.models;
+  const cur = S.settings.local_model;
+  sel.disabled = false;
+  sel.innerHTML = r.models.map(m => `<option value="${esc(m.name)}" ${m.name === cur ? 'selected' : ''}>${esc(m.name)}${m.vision ? ' · sees images' : ' · text only'}${m.gb ? ` · ${m.gb} GB` : ''}</option>`).join('')
+    + (cur && !r.models.some(m => m.name === cur) ? `<option selected value="${esc(cur)}">${esc(cur)} (not installed)</option>` : '');
+  stat.textContent = `Ollama is running · ${r.models.length} model${r.models.length === 1 ? '' : 's'}`;
+  sel.onchange = async () => { const x = await api('save_settings', {local_model: sel.value}); S.settings = x.settings; toast(`Local model: ${sel.value}`); };
+}
+S.rvAI = {};
+/** Review page: ask the local model about the screenshot on screen (once per picture). */
+async function rvAsk(it){
+  const box = $('#rvAi'); if (!box) return;
+  const show = a => {
+    if (!$('#rvAi') || rvList()[S.rvIdx]?.p !== it.p) return;  // moved on meanwhile
+    document.querySelectorAll('#rvHost .key.ai').forEach(k => k.classList.remove('ai'));
+    if (a.err) { $('#rvAi').innerHTML = `${icon('robot')}<span class="muted">Local AI: ${esc(a.err)}</span><button class="btn mini" id="rvAiRetry">Try again</button>`;
+      $('#rvAiRetry').onclick = () => { delete S.rvAI[it.p]; rvAsk(it); }; return; }
+    const key = [...document.querySelectorAll('#rvHost .key[data-c]')].find(k => k.dataset.c === a.c); key?.classList.add('ai');
+    $('#rvAi').innerHTML = `${icon('robot')}<span>Local AI suggests <span class="pill"><span class="dot" style="background:${color(a.c)}"></span>${esc(a.c)}</span>${a.why ? ` · <span class="muted">${esc(a.why)}</span>` : ''}</span>
+      ${a.c === it.c ? '<span class="muted">(where it already is)</span>' : `<button class="btn mini primary" id="rvAiUse"><kbd>A</kbd> Use it</button>`}`;
+    $('#rvAiUse') && ($('#rvAiUse').onclick = () => rvFile(a.c));
+  };
+  if (S.rvAI[it.p]) return show(S.rvAI[it.p]);
+  box.innerHTML = `<span class="spin"></span><span>Local AI is looking at this one…</span>`;
+  try { const r = await api('local_suggest', it.p); S.rvAI[it.p] = r; }
+  catch (e) { S.rvAI[it.p] = {err: String(e)}; }
+  show(S.rvAI[it.p]);
+}
+
 /* ---------- review queue ---------- */
 S.rv = null; S.rvTab = 'other'; S.rvIdx = 0; S.reviewCount = 0;
 async function refreshReviewCount(){
@@ -1420,12 +1468,13 @@ function renderReview(){
       <div class="rv-why"><b>${esc(it.n)}</b> · ${esc(it.f || '')} · now in <span class="pill"><span class="dot" style="background:${color(it.c)}"></span>${esc(it.c)}</span>
         <br>${S.rvTab === 'weak' ? 'Filed automatically, but it was a close call' : 'Why it’s here'}: ${esc(it.r || '—')}</div>
       ${it.t ? `<details><summary class="muted" style="cursor:pointer">Text found</summary><div class="ocr" style="margin-top:6px">${esc(it.t)}</div></details>` : ''}
+      ${S.settings.local_ai && S.settings.local_model ? `<div class="rv-ai" id="rvAi"></div>` : ''}
       <div class="keys">${S.rvTab === 'weak' ? `<button class="key ok" data-ok><kbd>↵</kbd>${icon('check')}<span>Looks right</span></button>` : ''}
         ${names.slice(0, 9).map((n, i) => `<button class="key" data-c="${esc(n)}"><kbd>${i + 1}</kbd><span class="sw" style="background:${color(n)}"></span><span>${esc(n)}</span></button>`).join('')}
         <button class="key" data-more><kbd>…</kbd><span>Other category…</span></button></div>
       <div class="rv-foot"><button class="btn mini" data-prev>${icon('left')}Back</button><button class="btn mini" data-skip>Skip${icon('right')}</button>
         <button class="btn mini" data-show>${icon('open')}Show in folder</button><button class="btn mini" data-drag style="cursor:grab">${icon('share')}Drag out</button>
-        <span style="margin-left:auto">${S.rvIdx + 1} of ${list.length.toLocaleString()} · keys 1–9 file it, ← → move, S skips</span></div></div></div>`;
+        <span style="margin-left:auto">${S.rvIdx + 1} of ${list.length.toLocaleString()} · keys 1–9 file it${S.settings.local_ai ? ', A uses the AI pick' : ''}, ← → move, S skips</span></div></div></div>`;
   host.querySelectorAll('.rv-it').forEach(r => r.onclick = () => { S.rvIdx = +r.dataset.i; renderReview(); });
   host.querySelector('.rv-it.on')?.scrollIntoView({block:'nearest'});
   host.querySelectorAll('[data-c]').forEach(b => b.onclick = () => rvFile(b.dataset.c));
@@ -1436,6 +1485,7 @@ function renderReview(){
   $('[data-show]', host).onclick = () => api('reveal', it.p);
   $('[data-drag]', host).onmousedown = e => dragOut(e, [it.p]);
   $('#rvImg') && ($('#rvImg').ondblclick = () => api('open', it.p));
+  if ($('#rvAi')) rvAsk(it);
 }
 function rvMoreMenu(x, y){
   closeMenu();
@@ -1473,6 +1523,7 @@ document.addEventListener('keydown', e => {
   const names = (S.rules?.data.categories || []).map(c => c.name);
   if (/^[1-9]$/.test(e.key) && names[+e.key - 1]) { e.preventDefault(); rvFile(names[+e.key - 1]); }
   else if (e.key === 'Enter' && S.rvTab === 'weak') { e.preventDefault(); rvOk(); }
+  else if (e.key.toLowerCase() === 'a' && $('#rvAiUse')) { e.preventDefault(); $('#rvAiUse').click(); }
   else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 's') { e.preventDefault(); S.rvIdx++; renderReview(); }
   else if (e.key === 'ArrowLeft') { e.preventDefault(); S.rvIdx--; renderReview(); }
 });

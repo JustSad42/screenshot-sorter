@@ -19,6 +19,9 @@ CATEGORIES Add, rename, reorder (drag) categories. Click a keyword's weight to m
            stronger (3) or weaker (1/2) clue.
 CLEAN UP   Find duplicates (extras go to the Recycle Bin) and shrink screenshots to AVIF
            (much smaller; originals kept in a backup folder) or lossless WebP.
+LOCAL AI   Optional (Settings > Local AI): a model in Ollama on this PC suggests folders for
+           leftovers when you sort by hand (Sort page, Review; press A to use its pick).
+           It never runs during auto-sort and nothing leaves your PC.
 INSIGHTS   Counts by category and month. League: games, wins/losses, KDA and rank over time.
            YouTube: views, watch time and subscribers from Studio screenshots.
 SETTINGS   Auto-sort: Instantly / Every few hours / Off, tray icon or hidden, start at login,

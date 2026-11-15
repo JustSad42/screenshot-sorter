@@ -377,6 +377,30 @@ pub fn classify_files_ex(files: &[PathBuf], folder: &Path, progress: Progress, l
     items
 }
 
+/// Leftovers (Other / No Text) get a suggestion from the local model, if it's turned on.
+/// Called only for sorting you start yourself, never by auto-sort.
+pub fn local_ai_pass(items: &mut [Item], progress: Progress, log: Log) {
+    let s = settings::load();
+    let Some(model) = crate::localai::model(&s) else { return };
+    let rules = rules::load();
+    let idx: Vec<usize> = items.iter().enumerate().filter(|(_, it)| it.category == rules.fallback || it.category == rules.no_text).map(|(i, _)| i).collect();
+    if idx.is_empty() {
+        return;
+    }
+    let asks: Vec<(PathBuf, String)> = idx.iter().map(|&i| (items[i].path.clone(), items[i].text.clone())).collect();
+    let answers = crate::localai::classify(&model, &asks, &rules, progress, log);
+    for &i in &idx {
+        if let Some((cat, why)) = answers.get(&items[i].path) {
+            // "none of these" keeps what the rules said (No Text stays No Text)
+            if cat != &items[i].category && cat != &rules.fallback {
+                items[i].category = cat.clone();
+                items[i].how = if why.is_empty() { "local AI".into() } else { format!("local AI: {why}") };
+                items[i].conf = "weak".into();
+            }
+        }
+    }
+}
+
 pub fn make_plan(folder: &Path, progress: Progress, log: Log, allow_claude: bool) -> Vec<Item> {
     classify_files(&loose_images(folder), folder, progress, log, allow_claude)
 }
