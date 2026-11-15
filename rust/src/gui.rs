@@ -79,7 +79,120 @@ fn item_json(folder: &Path, p: &Path, reason: String, text: &str) -> Value {
     json!({"p": p.to_string_lossy(), "n": p.file_name().unwrap_or_default().to_string_lossy(),
            "c": sorter::category_of(&root, p).unwrap_or_else(|| "Unsorted".into()),
            "f": root.file_name().unwrap_or_default().to_string_lossy(),
-           "r": reason, "t": text.chars().take(700).collect::<String>(), "cloud": ocr::online_only(p)})
+           "r": reason, "t": text.chars().take(700).collect::<String>(), "cloud": ocr::online_only(p),
+           "d": sorter::taken_at(p).format("%Y-%m-%d %H:%M").to_string()})
+}
+
+// ---------- review queue ----------
+
+fn review_state_file() -> PathBuf {
+    settings::app_file("review_state.json")
+}
+/// Files you've said were filed right ("Looks right" on the Review page).
+fn reviewed_ok() -> std::collections::HashSet<String> {
+    std::fs::read_to_string(review_state_file())
+        .ok()
+        .and_then(|s| serde_json::from_str::<Value>(&s).ok())
+        .and_then(|v| v["ok"].as_array().map(|a| a.iter().filter_map(Value::as_str).map(|x| x.to_lowercase()).collect()))
+        .unwrap_or_default()
+}
+fn mark_reviewed(paths: &[PathBuf]) {
+    let mut ok = reviewed_ok();
+    ok.extend(paths.iter().map(|p| p.to_string_lossy().to_lowercase()));
+    ok.retain(|p| Path::new(p).exists());
+    let _ = settings::write_atomic(&review_state_file(), json!({"ok": ok.into_iter().collect::<Vec<_>>()}).to_string().as_bytes());
+}
+
+/// Auto-sorted files marked "weak" in the last 60 days that are still where they were put.
+fn weak_moves() -> Vec<(PathBuf, Value)> {
+    let ok = reviewed_ok();
+    let since = (chrono::Local::now() - chrono::Duration::days(60)).format("%Y-%m-%dT%H:%M:%S").to_string();
+    let mut seen = std::collections::HashSet::new();
+    activity::recent(50_000)
+        .into_iter()
+        .filter(|e| e["kind"] == "move" && e["by"] == "auto" && e["conf"] == "weak" && e["t"].as_str().map(|t| t >= since.as_str()).unwrap_or(false))
+        .filter_map(|e| {
+            let to = PathBuf::from(e["to"].as_str()?);
+            let key = to.to_string_lossy().to_lowercase();
+            (to.exists() && !ok.contains(&key) && seen.insert(key)).then_some((to, e))
+        })
+        .collect()
+}
+
+/// Category folders for leftovers ("Other", "No Text") in every folder.
+fn leftovers(which: &str) -> Vec<(PathBuf, PathBuf)> {
+    let rules = rules::load();
+    let cat = if which == "notext" { rules.no_text } else { rules.fallback };
+    all_folders().into_iter().flat_map(|root| sorter::all_images(&root.join(&cat)).into_iter().map(move |p| (root.clone(), p))).collect()
+}
+
+fn review_lists() -> Value {
+    let rules = rules::load();
+    let cache = ocr::load_cache();
+    let mk = |root: &Path, p: &Path| {
+        let t = cache.get(&cache_key(p)).cloned().unwrap_or_default();
+        let it = sorter::judge(&rules, p, &t);
+        item_json(root, p, it.reason(), &t)
+    };
+    let other: Vec<Value> = leftovers("other").iter().map(|(r, p)| mk(r, p)).collect();
+    let notext: Vec<Value> = leftovers("notext").iter().map(|(r, p)| mk(r, p)).collect();
+    let weak: Vec<Value> = weak_moves()
+        .iter()
+        .map(|(p, e)| {
+            let root = settings::root_of(p).unwrap_or_else(folder);
+            let mut v = item_json(&root, p, e["why"].as_str().unwrap_or("").to_string(), cache.get(&cache_key(p)).map(String::as_str).unwrap_or(""));
+            v["when"] = e["t"].clone();
+            v
+        })
+        .collect();
+    json!({"other": other, "notext": notext, "weak": weak})
+}
+
+/// For the sidebar badge: unmatched + worth-a-second-look.
+fn review_count() -> Value {
+    json!({"other": leftovers("other").len(), "weak": weak_moves().len()})
+}
+
+// ---------- smart albums ----------
+
+fn albums_json() -> Value {
+    let s = settings::load();
+    let cache = ocr::load_cache();
+    let files: Vec<PathBuf> = all_folders().iter().flat_map(|r| sorter::all_images(r)).collect();
+    let texts: Vec<String> = files.iter().filter_map(|p| cache.get(&cache_key(p)).map(|t| t.to_lowercase())).collect();
+    json!(s.albums.iter().map(|a| {
+        let q = a.q.to_lowercase();
+        json!({"name": a.name, "q": a.q, "count": texts.iter().filter(|t| t.contains(&q)).count()})
+    }).collect::<Vec<_>>())
+}
+
+fn save_album(name: &str, q: &str) -> Result<Value, String> {
+    let (name, q) = (name.trim(), q.trim());
+    if name.is_empty() || q.is_empty() {
+        return Err("An album needs a name and something to search for.".into());
+    }
+    let mut s = settings::load();
+    s.albums.retain(|a| !a.name.eq_ignore_ascii_case(name));
+    s.albums.push(settings::Album { name: name.into(), q: q.into() });
+    settings::save(&s).map_err(|e| e.to_string())?;
+    Ok(albums_json())
+}
+
+// ---------- first run ----------
+
+/// Folders that usually hold screenshots, with how many loose pictures each has.
+fn suggest_folders() -> Value {
+    let home = std::env::var("USERPROFILE").map(PathBuf::from).unwrap_or_default();
+    let mut out = Vec::new();
+    for rel in ["Pictures\\Screenshots", "OneDrive\\Pictures\\Screenshots", "OneDrive\\Pictures\\Screenshots 1", "Videos\\Captures", "OneDrive\\Videos\\Captures", "Desktop", "OneDrive\\Desktop"] {
+        let p = home.join(rel);
+        if p.is_dir() {
+            let loose = sorter::loose_images(&p).len();
+            let watched = settings::load().folders.iter().any(|f| f.path.eq_ignore_ascii_case(&p.to_string_lossy()));
+            out.push(json!({"path": p.to_string_lossy(), "loose": loose, "watched": watched, "suggest": loose > 0 && !rel.contains("Desktop")}));
+        }
+    }
+    json!(out)
 }
 
 /// Per folder: images never read (mostly online-only OneDrive files). Counted at most once a minute.
@@ -120,7 +233,11 @@ fn run_job(kind: &str, a: &Value, f: &Path, progress: ocr::Progress, log: ocr::L
                             let p = PathBuf::from(it["p"].as_str()?);
                             p.exists().then(|| sorter::Item {
                                 text: cache.get(&cache_key(&p)).cloned().unwrap_or_default(),
-                                path: p, category: it["c"].as_str().unwrap_or("Other").into(), hits: vec![], how: String::new(),
+                                path: p, category: it["c"].as_str().unwrap_or("Other").into(), hits: vec![],
+                                // the reason the preview showed (kept as-is), and how sure it was
+                                how: it["r"].as_str().filter(|r| !r.is_empty() && *r != "text").unwrap_or("sorted by you").into(),
+                                conf: it["conf"].as_str().unwrap_or("").into(),
+                                ..Default::default()
                             })
                         })
                         .collect()
@@ -130,13 +247,37 @@ fn run_job(kind: &str, a: &Value, f: &Path, progress: ocr::Progress, log: ocr::L
             json!({"moved": sorter::apply_plan(f, &plan, "you").len()})
         }
         "browse" => {
-            let files = sorter::all_images(f);
-            let texts = ocr::ocr_files(&files, progress, log);
-            let items: Vec<Value> = files.iter().map(|p| item_json(f, p, String::new(), texts.get(p).map(String::as_str).unwrap_or(""))).collect();
+            let all = a["all"].as_bool() == Some(true);
+            let roots = if all { all_folders() } else { vec![f.to_path_buf()] };
+            let files: Vec<(PathBuf, PathBuf)> = roots.iter().flat_map(|r| sorter::all_images(r).into_iter().map(move |p| (r.clone(), p))).collect();
+            let paths: Vec<PathBuf> = files.iter().map(|x| x.1.clone()).collect();
+            let texts = ocr::ocr_files(&paths, progress, log);
+            let items: Vec<Value> = files.iter().map(|(r, p)| item_json(r, p, String::new(), texts.get(p).map(String::as_str).unwrap_or(""))).collect();
             // remember it, so next time the Library shows instantly
-            let _ = settings::write_atomic(&library_file(), json!({"folder": f.to_string_lossy(), "items": items}).to_string().as_bytes());
-            tools::prewarm_thumbs(files, 480);
-            json!({"items": items})
+            let key = if all { "*".to_string() } else { f.to_string_lossy().to_string() };
+            let _ = settings::write_atomic(&library_file(), json!({"folder": key, "items": items}).to_string().as_bytes());
+            tools::prewarm_thumbs(paths, 480);
+            json!({"items": items, "folders": roots.len()})
+        }
+        "preview_folders" => {
+            // what watching these folders would do right now (nothing is moved)
+            let mut out = Vec::new();
+            for p in paths_arg(a.get("paths")) {
+                let loose = sorter::loose_images(&p);
+                let items = sorter::classify_files(&loose, &p, progress, log, false);
+                let mut cats: Vec<(String, usize)> = Vec::new();
+                for it in &items {
+                    match cats.iter_mut().find(|c| c.0 == it.category) {
+                        Some(c) => c.1 += 1,
+                        None => cats.push((it.category.clone(), 1)),
+                    }
+                }
+                cats.sort_by(|a, b| b.1.cmp(&a.1));
+                let weak = items.iter().filter(|i| i.conf == "weak" || i.conf == "none").count();
+                out.push(json!({"path": p.to_string_lossy(), "loose": loose.len(), "moves": items.len(), "unsure": weak,
+                                "skipped": loose.len() - items.len(), "cats": cats, "sorted": sorter::all_images(&p).len() - loose.len()}));
+            }
+            json!(out)
         }
         "search" => {
             let q = a["q"].as_str().unwrap_or("");
@@ -336,7 +477,7 @@ fn dispatch(method: &str, a: &[Value]) -> Result<Value, String> {
         }
         "add_keywords" => {
             let words: Vec<String> = a.get(1).and_then(Value::as_array).map(|w| w.iter().filter_map(Value::as_str).map(String::from).collect()).unwrap_or_default();
-            rules::add_keywords(&s_arg(a, 0), &words, 2.0)?;
+            rules::add_keywords(&s_arg(a, 0), &words, a.get(2).and_then(Value::as_f64).unwrap_or(2.0))?;
             rules_json()
         }
         "size_estimate" => {
@@ -401,7 +542,67 @@ fn dispatch(method: &str, a: &[Value]) -> Result<Value, String> {
         "activity" => {
             let limit = a.first().and_then(Value::as_u64).unwrap_or(1500) as usize;
             let jobs: Vec<Value> = JOBS.lock().unwrap().values().filter(|j| !j.done).map(|j| json!({"kind": j.kind, "progress": [j.progress.0, j.progress.1], "message": j.message})).collect();
-            json!({"entries": activity::recent(limit), "status": background::status_json(), "jobs": jobs, "unread": unread_summary(false)})
+            json!({"entries": activity::recent(limit), "status": background::status_json(), "jobs": jobs, "unread": unread_summary(false),
+                   "undone": sorter::undone_batches()})
+        }
+        "undo_batch" => json!(sorter::undo_batch(&s_arg(a, 0))?),
+        "start_onedrive" => {
+            let local = std::env::var("LOCALAPPDATA").unwrap_or_default();
+            let pf = std::env::var("ProgramFiles").unwrap_or_default();
+            let exe = [format!("{local}\\Microsoft\\OneDrive\\OneDrive.exe"), format!("{pf}\\Microsoft OneDrive\\OneDrive.exe")]
+                .into_iter()
+                .find(|p| Path::new(p).exists())
+                .ok_or("OneDrive isn't installed in the usual place - start it from the Start menu.")?;
+            std::process::Command::new(exe).arg("/background").spawn().map_err(|e| e.to_string())?;
+            json!(true)
+        }
+        "review" => review_lists(),
+        "review_count" => review_count(),
+        "review_ok" => {
+            mark_reviewed(&paths_arg(a.first()));
+            Value::Null
+        }
+        "albums" => albums_json(),
+        "save_album" => save_album(&s_arg(a, 0), &s_arg(a, 1))?,
+        "delete_album" => {
+            let mut s = settings::load();
+            s.albums.retain(|x| x.name != s_arg(a, 0));
+            settings::save(&s).map_err(|e| e.to_string())?;
+            albums_json()
+        }
+        "league" => crate::trackers::league(&all_folders()),
+        "youtube" => crate::trackers::youtube(&all_folders()),
+        "suggest_folders" => suggest_folders(),
+        "pick_folder_path" => match rfd::FileDialog::new().set_directory(folder()).pick_folder() {
+            Some(p) => json!(p.to_string_lossy()),
+            None => Value::Null,
+        },
+        "drag_out" => {
+            // drag pictures out of the app into Discord, a browser, Explorer...
+            let paths: Vec<PathBuf> = paths_arg(a.first()).into_iter().filter(|p| allowed(p)).take(50).collect();
+            if paths.is_empty() {
+                return Ok(Value::Null);
+            }
+            let preview = tools::thumb_bytes(&paths[0], 160);
+            let app = APP.get().ok_or("not ready")?.clone();
+            let a2 = app.clone();
+            app.run_on_main_thread(move || {
+                // Only while the left button is still held: a drag started after it was released
+                // would wait for the next click and then drop the files wherever the mouse is.
+                let held = unsafe { windows::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState(0x01) } as u16 & 0x8000 != 0;
+                if !held {
+                    return;
+                }
+                if let Some(w) = a2.get_webview_window("main") {
+                    let image = match preview {
+                        Some(b) => drag::Image::Raw(b),
+                        None => drag::Image::File(paths[0].clone()),
+                    };
+                    let _ = drag::start_drag(&w, drag::DragItem::Files(paths), image, |_, _| {}, drag::Options::default());
+                }
+            })
+            .map_err(|e| e.to_string())?;
+            Value::Null
         }
         "undo_one" => {
             sorter::undo_one(Path::new(&s_arg(a, 0)), Path::new(&s_arg(a, 1)))?;
@@ -418,7 +619,8 @@ fn dispatch(method: &str, a: &[Value]) -> Result<Value, String> {
         }
         "library_snapshot" => {
             let snap: Value = std::fs::read_to_string(library_file()).ok().and_then(|s| serde_json::from_str(&s).ok()).unwrap_or(json!({}));
-            if snap["folder"].as_str() == Some(folder().to_string_lossy().as_ref()) { snap } else { json!({"items": []}) }
+            let want = if a.first().and_then(Value::as_bool) == Some(true) { "*".to_string() } else { folder().to_string_lossy().to_string() };
+            if snap["folder"].as_str() == Some(want.as_str()) { snap } else { json!({"items": []}) }
         }
         other => return Err(format!("unknown method {other}")),
     })

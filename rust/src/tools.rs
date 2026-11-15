@@ -102,7 +102,23 @@ fn convert_one(p: &Path, mode: Mode) -> Result<Option<(PathBuf, u64, u64)>, Stri
 
 /// Shrink every matching screenshot under folder. -> (converted, bytes_before, bytes_after)
 pub fn compress(folder: &Path, mode: Mode, progress: Progress, log: Log) -> (usize, u64, u64) {
-    let files = candidates(folder, mode);
+    compress_list(folder, candidates(folder, mode), mode, progress, log)
+}
+
+/// Auto-shrink: AVIF candidates in `folder` last changed more than `days` days ago
+/// (online-only OneDrive files are left alone), at most `limit` per run.
+pub fn old_enough(folder: &Path, days: u32, limit: usize) -> Vec<PathBuf> {
+    let age = std::time::Duration::from_secs(days as u64 * 86400);
+    candidates(folder, Mode::Avif)
+        .into_iter()
+        .filter(|p| !crate::ocr::online_only(p))
+        .filter(|p| std::fs::metadata(p).and_then(|m| m.modified()).map(|t| t.elapsed().unwrap_or_default() >= age).unwrap_or(false))
+        .take(limit)
+        .collect()
+}
+
+/// Shrink these files (all under `folder`). -> (converted, bytes_before, bytes_after)
+pub fn compress_list(folder: &Path, files: Vec<PathBuf>, mode: Mode, progress: Progress, log: Log) -> (usize, u64, u64) {
     let done = AtomicUsize::new(0);
     let total = files.len();
     let results: Vec<(PathBuf, String, Option<(PathBuf, u64, u64)>)> = files

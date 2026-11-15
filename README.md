@@ -45,6 +45,26 @@ JPEG XL screenshots, install the free AV1 and JPEG XL extensions from the Micros
   brings the window forward, and closing the window keeps auto-sort running.
 - **Fits any screen:** the window opens at a size that fits your screen and remembers its size
   and position. The layout adapts to narrow windows, and you can zoom with Ctrl + / Ctrl − / Ctrl 0.
+- **Review:** screenshots that didn't clearly fit (Other, No Text, and close calls that were
+  filed anyway) wait on one page. Press 1-9 to file one. Each choice can add a couple of
+  telling words to that category, so the rules learn.
+- **Confidence:** every move is marked strong or weak. Weak ones still move but show a
+  "Check" badge and appear under Review > Worth a second look.
+- **Clues from app names:** Game Bar style file names ("Discord 2026-...png") and PNG text
+  chunks count as extra text.
+- **Clearer reasons:** "no readable text", or "no category keywords matched · top words: ...".
+- **Undo a whole sort:** Activity groups each sort into one row with "Undo all".
+- **Problems with fixes:** errors explain what went wrong and offer a fix (Start OneDrive, Try again).
+- **Library across folders, Timeline:** browse one folder or all of them, as a grid or by
+  month and day with a month rail.
+- **Drag out:** drag pictures from the app into Discord, a browser or Explorer.
+- **Smart albums:** save a search in the sidebar. It updates itself.
+- **Summary notification:** a daily or weekly evening summary (needs the tray icon).
+- **Auto-shrink:** optionally shrink screenshots to AVIF after 7, 30 or 90 days (off by default).
+- **League and YouTube trackers:** Insights reads match results, KDA and rank (League) or views,
+  watch time and subscribers (YouTube Studio) from your screenshots and charts them.
+- **First-run setup:** pick folders and see exactly what would move before anything does.
+  Adding a folder later shows the same preview.
 - **Explorer menu:** a "Sort with Screenshot Sorter" right-click menu on folders.
 
 Auto-sort is off on a new install until you turn it on in Settings.

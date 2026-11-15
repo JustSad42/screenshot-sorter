@@ -7,22 +7,30 @@ SORT       Preview shows where new screenshots would go. Nothing moves until you
            Drag a card onto a category chip (or right-click > Move to) to change it.
            After moving, "Teach it" offers words so similar screenshots go there next time.
            Click a card for a preview; double-click for full screen (arrow keys to flip).
-LIBRARY    Everything already sorted. Re-file anything by drag or right-click.
+REVIEW     Screenshots that didn't clearly fit. Press 1-9 to file one (Enter = looks right,
+           arrows or S to move on). Your choices teach the rules (Learn from my choices).
+LIBRARY    Everything already sorted, in this folder or all folders, as a grid or a timeline.
+           Re-file anything by drag or right-click. The arrow button on a card drags it out
+           into Discord, a browser or Explorer.
            "Readable names" renames files like "2026-10-13 234220 Chat - Name.png" (undoable).
 SEARCH     The bar at the top searches the text inside every screenshot. Press / to jump to it.
+           "Save as album" keeps a search in the sidebar; it updates itself.
 CATEGORIES Add, rename, reorder (drag) categories. Click a keyword's weight to make it a
            stronger (3) or weaker (1/2) clue.
 CLEAN UP   Find duplicates (extras go to the Recycle Bin) and shrink screenshots to AVIF
            (much smaller; originals kept in a backup folder) or lossless WebP.
-INSIGHTS   Counts by category and month. "Full report" adds League and YouTube Studio numbers.
+INSIGHTS   Counts by category and month. League: games, wins/losses, KDA and rank over time.
+           YouTube: views, watch time and subscribers from Studio screenshots.
 SETTINGS   Auto-sort: Instantly / Every few hours / Off, tray icon or hidden, start at login,
            month folders, readable names, Arabic text, optional Claude for leftovers, theme,
-           and update checks.
+           update checks, a daily/weekly summary, and shrinking old screenshots to AVIF
+           (off unless you pick 7, 30 or 90 days).
 
 FOLDERS    Click the folder at the top to switch between folders or watch another one.
            In Settings each watched folder is sorted Instantly, Every few hours, or Off.
 ACTIVITY   Everything auto-sort and you have done: where each file went and why, with Undo
-           and Show buttons. Files you put back with Undo are left alone by auto-sort.
+           and Show buttons. Each sort is one row with "Undo all". Problems come with a fix
+           (Start OneDrive, Try again). Files you put back with Undo are left alone by auto-sort.
 
 Auto-sort is off until you turn it on for a folder. The app is a single program: closing the
 window keeps auto-sort running in the tray (or hidden); opening it again brings the window

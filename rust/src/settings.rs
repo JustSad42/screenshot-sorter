@@ -38,12 +38,27 @@ pub struct FolderCfg {
     pub mode: String,
 }
 
+/// A saved search that shows in the sidebar.
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(default)]
+pub struct Album {
+    pub name: String,
+    pub q: String,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default)]
 pub struct Settings {
     /// folders sorted in the background (`folder` is only the one open in the window)
     pub folders: Vec<FolderCfg>,
     pub ui_zoom: f64,
+    /// summary notification: "off" | "daily" | "weekly"
+    pub summary: String,
+    /// shrink screenshots to AVIF once they're this many days old (0 = off)
+    pub auto_avif_days: u32,
+    pub albums: Vec<Album>,
+    /// the Review page adds a couple of telling words to the category you pick
+    pub learn_words: bool,
     pub folder: String,
     pub month_folders: bool,
     pub rename_files: bool,
@@ -70,6 +85,10 @@ impl Default for Settings {
         Settings {
             folders: vec![],
             ui_zoom: 1.0,
+            summary: "daily".into(),
+            auto_avif_days: 0,
+            albums: vec![],
+            learn_words: true,
             folder: String::new(),
             month_folders: false,
             rename_files: false,

@@ -50,6 +50,8 @@ pub struct Moved<'a> {
     pub to: &'a Path,
     pub category: &'a str,
     pub why: &'a str,
+    /// "strong" | "weak" | "none" | ""
+    pub conf: &'a str,
 }
 
 /// kind: "move" | "rename" | "undo"; by: "auto" | "you"; batch: the undo log it belongs to
@@ -60,7 +62,7 @@ pub fn moved(kind: &str, by: &str, batch: &str, items: &[Moved]) {
         .map(|m| {
             let root = settings::root_of(m.from).or_else(|| settings::root_of(m.to));
             json!({"t": t, "kind": kind, "by": by, "batch": batch, "from": s(m.from), "to": s(m.to),
-                   "cat": m.category, "why": m.why, "folder": root.map(|r| s(&r)).unwrap_or_default()})
+                   "cat": m.category, "why": m.why, "conf": m.conf, "folder": root.map(|r| s(&r)).unwrap_or_default()})
         })
         .collect();
     append(&entries);

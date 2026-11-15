@@ -35,6 +35,12 @@ pub fn spawn(args: &[&str]) {
     let _ = Command::new(exe()).args(args).creation_flags(NO_WINDOW | DETACHED).spawn();
 }
 
+/// Does this registry command start this copy of the app (or a copy that no longer exists)?
+fn is_mine(cmd: &str) -> bool {
+    let target = exe_in(cmd);
+    !target.exists() || target.to_string_lossy().eq_ignore_ascii_case(&exe().to_string_lossy())
+}
+
 fn hkcu() -> RegKey {
     RegKey::predef(HKEY_CURRENT_USER)
 }
@@ -43,7 +49,7 @@ pub fn set_start_at_login(on: bool) {
     if let Ok((k, _)) = hkcu().create_subkey(RUN_KEY) {
         if on {
             let _ = k.set_value(RUN_NAME, &launch_command(&["--tray"]));
-        } else {
+        } else if k.get_value::<String, _>(RUN_NAME).map(|cur| is_mine(&cur)).unwrap_or(false) {
             let _ = k.delete_value(RUN_NAME);
         }
     }
@@ -60,7 +66,11 @@ pub fn set_explorer_menu(on: bool) {
                 let _ = k.set_value("", &launch_command(&["--gui-folder", "\"%V\""]));
             }
         } else {
-            let _ = hkcu().delete_subkey_all(key);
+            // only remove the menu if it opens this copy (a test or portable copy leaves the installed one alone)
+            let cur = hkcu().open_subkey(format!(r"{key}\command")).and_then(|k| k.get_value::<String, _>(""));
+            if cur.map(|c| is_mine(&c)).unwrap_or(true) {
+                let _ = hkcu().delete_subkey_all(key);
+            }
         }
     }
 }

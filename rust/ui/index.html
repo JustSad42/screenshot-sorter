@@ -359,6 +359,91 @@ input[type=range]{accent-color:var(--accent);width:160px}
   .drawer{width:min(400px,94%)}
   .fsetting{flex-wrap:wrap}
 }
+/* 2.2: chart series (validated: light + dark), review, timeline, albums, wizard */
+:root{--s1:#2a78d6;--s2:#eb6834}
+:root[data-theme="dark"]{--s1:#2a78d6;--s2:#dd5f2b}
+.badge.warn{color:#b07400;border-color:rgba(217,145,0,.45);background:rgba(217,145,0,.08)}
+.card .share{position:absolute;right:8px;bottom:8px;width:28px;height:28px;border-radius:8px;background:rgba(15,17,21,.62);color:#fff;display:grid;place-items:center;opacity:0;transition:opacity .15s;cursor:grab}
+.card .share svg{width:15px;height:15px}
+.card:hover .share{opacity:1}
+.nav .count.hot{background:var(--accent);color:#fff;border-radius:999px;padding:0 7px;font-weight:650}
+.albums{margin-top:14px;display:flex;flex-direction:column;gap:2px}
+.albums .ah{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;padding:4px 10px;display:flex;align-items:center}
+.albums .ah button{margin-left:auto;border:0;background:none;color:var(--text-3);cursor:pointer;padding:0 2px}
+.albums .al{display:flex;align-items:center;gap:10px;border:0;background:none;padding:7px 10px;border-radius:9px;cursor:pointer;color:var(--text-2);text-align:left;font:inherit}
+.albums .al:hover{background:var(--panel-2);color:var(--text)}
+.albums .al.on{background:var(--panel);color:var(--text);box-shadow:var(--shadow)}
+.albums .al span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.albums .al small{color:var(--text-3);font-variant-numeric:tabular-nums}
+/* review */
+.rv{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;align-items:start}
+.rv-list{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-height:calc(100vh - 230px);overflow:auto;padding:6px}
+.rv-it{display:flex;gap:9px;align-items:center;padding:6px;border-radius:9px;cursor:pointer}
+.rv-it:hover{background:var(--panel-2)}
+.rv-it.on{background:var(--accent-soft)}
+.rv-it img,.rv-it .ph2{width:64px;height:40px;border-radius:6px;object-fit:cover;background:var(--panel-2);flex:none}
+.rv-it .tx{min-width:0;font-size:12px}
+.rv-it .tx b{display:block;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv-it .tx span{color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.rv-stage{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);min-width:0}
+.rv-img{display:grid;place-items:center;background:var(--panel-2);border-radius:10px;min-height:240px;max-height:52vh;overflow:hidden}
+.rv-img img{max-width:100%;max-height:52vh;display:block}
+.rv-why{margin:12px 0 4px;color:var(--text-2);font-size:13px}
+.keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-top:12px}
+.key{display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:9px 11px;cursor:pointer;text-align:left;font:inherit;color:var(--text);transition:all .12s}
+.key:hover{border-color:var(--accent);background:var(--accent-soft)}
+.key kbd{font:600 11px/1 "Segoe UI",sans-serif;min-width:20px;height:20px;display:grid;place-items:center;border-radius:6px;background:var(--panel);border:1px solid var(--line);color:var(--text-2)}
+.key .sw{width:9px;height:9px;border-radius:3px;flex:none}
+.key span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.key.ok{border-color:rgba(12,163,12,.45)}
+.rv-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;color:var(--text-3);font-size:12.5px}
+/* timeline */
+.tl{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:18px;align-items:start}
+.tl-month{margin-bottom:22px}
+.tl-month h3{font-size:16px;margin:0 0 8px;position:sticky;top:-20px;background:var(--bg);padding:8px 0;z-index:2}
+.tl-day{font-size:12px;color:var(--text-3);font-weight:600;margin:12px 0 8px}
+.tl-rail{position:sticky;top:0;display:flex;flex-direction:column;gap:2px;max-height:calc(100vh - 220px);overflow:auto}
+.tl-rail button{border:0;background:none;text-align:left;padding:5px 9px;border-radius:8px;cursor:pointer;color:var(--text-2);font:inherit;font-size:12.5px;display:flex;justify-content:space-between;gap:8px}
+.tl-rail button:hover{background:var(--panel-2);color:var(--text)}
+.tl-rail button small{color:var(--text-3);font-variant-numeric:tabular-nums}
+/* activity batches */
+.ev.grp{background:var(--panel-2)}
+.ev.grp .ic{background:var(--accent-soft);color:var(--accent)}
+.grp-body[hidden]{display:none}
+.fixrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+/* charts */
+.chartbox{margin-top:10px}
+.cards.charts{grid-template-columns:1fr}
+.chart2{width:100%;height:auto;display:block;overflow:visible}
+.chart2 .grid{stroke:var(--line);stroke-width:1}
+.chart2 .axis{stroke:var(--line-2);stroke-width:1}
+.chart2 .tick{fill:var(--text-3);font-size:11px}
+.chart2 .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart2 .pt{stroke:var(--panel);stroke-width:2}
+.chart2 .hit{fill:transparent;cursor:default}
+.chart2 .hit:hover+.pt,.chart2 g.hov .pt{r:6}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--text-2);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.ctip{position:fixed;pointer-events:none;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow-lg);border-radius:9px;padding:6px 9px;font-size:12.5px;z-index:90;display:none;max-width:280px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.tbl th{text-align:left;color:var(--text-3);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+.tbl td{padding:6px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.tbl tr:hover td{background:var(--panel-2)}
+.tabs{margin-left:auto}
+.seg button svg{width:15px;height:15px;margin-right:6px;vertical-align:-3px}
+/* setup / preview dialog */
+.modal.wide{width:min(700px,94vw);max-height:88vh;overflow:auto}
+.fchoice{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;margin-bottom:8px;cursor:pointer}
+.fchoice.on{border-color:var(--accent);background:var(--accent-soft)}
+.fchoice input{accent-color:var(--accent);width:16px;height:16px}
+.fchoice .tx{flex:1;min-width:0}
+.fchoice .tx b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fchoice .tx small{color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.pv{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.pv h4{margin:0 0 4px;font-size:14px;display:flex;align-items:center;gap:8px}
+.pv .cats{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.steps{font-size:12px;color:var(--text-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+@media (max-width:900px){.rv{grid-template-columns:1fr}.rv-list{max-height:220px}.tl{grid-template-columns:1fr}.tl-rail{display:none}}
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:999px;border:3px solid transparent;background-clip:content-box}
 </style>
 </head>
@@ -367,6 +452,7 @@ input[type=range]{accent-color:var(--accent);width:160px}
   <aside class="side">
     <div class="brand"><div class="logo"><svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 12h8M8 15h5"/></svg></div><span class="bt">Screenshot Sorter</span></div>
     <nav class="nav" id="nav"></nav>
+    <div class="albums" id="albums"></div>
     <div class="spacer"></div>
     <div class="bgcard" id="bgcard"></div>
   </aside>
@@ -385,6 +471,7 @@ input[type=range]{accent-color:var(--accent);width:160px}
 
     <div class="updbar" id="updbar"></div>
     <section class="view" id="v-sort"></section>
+    <section class="view" id="v-review"></section>
     <section class="view" id="v-library"></section>
     <section class="view" id="v-activity"></section>
     <section class="view" id="v-categories"></section>
@@ -400,6 +487,7 @@ input[type=range]{accent-color:var(--accent);width:160px}
 <div class="lightbox" id="lightbox"></div>
 <div class="modal-bg" id="modal"></div>
 <div class="toasts" id="toasts"></div>
+<div class="ctip" id="ctip"></div>
 
 <script>
 const AUTO = window.__AUTO;  // set by the app when opened from the Explorer menu
@@ -424,6 +512,9 @@ const ICONS = {
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   activity:'<path d="M3 12h4l3-8 4 16 3-8h4"/>', pause:'<path d="M9 5v14M15 5v14"/>', folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   alert:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+  review:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/>',
+  album:'<path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>', share:'<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/>',
+  calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', check:'<path d="M20 6 9 17l-5-5"/>', layers:'<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
   download:'<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
   cloud:'<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/>',
   imageoff:'<path d="M3 3l18 18M21 15V5a2 2 0 0 0-2-2H9M3 7v12a2 2 0 0 0 2 2h12"/><path d="m3 16 5-5 4 4"/>',
@@ -436,7 +527,7 @@ const api = (method, ...args) => window.__TAURI__.core.invoke('call', {method, a
 
 const S = { view:'sort', items:[], mode:'plan', filter:'All', sel:new Set(), last:null, rules:null, colors:{}, settings:{}, bg:{},
             folder:'', busy:false, cardSize:210, drawerItem:null, lbIndex:-1, editCat:null, dups:[] };
-const NAV = [['sort','Sort'],['library','Library'],['activity','Activity'],['categories','Categories'],['cleanup','Clean up'],['insights','Insights'],['settings','Settings']];
+const NAV = [['sort','Sort'],['review','Review'],['library','Library'],['activity','Activity'],['categories','Categories'],['cleanup','Clean up'],['insights','Insights'],['settings','Settings']];
 const V = () => document.getElementById(S.view === 'library' ? 'v-library' : 'v-sort');  // the grid view being shown
 const color = c => S.colors[c] || (c==='Unsorted' ? '#9aa1b2' : '#8a90a0');
 
@@ -496,13 +587,14 @@ function prompt2(title, text, value=''){
 /* ---------- shell ---------- */
 function renderNav(){
   $('#nav').innerHTML = NAV.map(([k, l]) => `<button data-v="${k}" title="${l}" class="${S.view===k?'on':''}">${icon(k)}<span>${l}</span>
-    ${k==='sort' && S.mode==='plan' && S.items.length ? `<span class="count">${S.items.length}</span>` : ''}</button>`).join('');
+    ${k==='sort' && S.mode==='plan' && S.items.length ? `<span class="count">${S.items.length}</span>` : ''}${k==='review' && S.reviewCount ? `<span class="count hot">${S.reviewCount}</span>` : ''}</button>`).join('');
   document.querySelectorAll('#nav button').forEach(b => b.onclick = () => { S.navigated = true; go(b.dataset.v); });
 }
 function go(v){
+  if (v !== 'sort') S.album = null;
   S.view = v; closeDrawer(); renderNav();
   document.querySelectorAll('.view').forEach(el => el.classList.toggle('on', el.id === 'v-' + v));
-  ({sort:renderSort, library:openLibrary, activity:openActivity, categories:renderCategories, cleanup:renderCleanup, insights:openInsights, settings:renderSettings})[v]();
+  ({sort:renderSort, review:openReview, library:openLibrary, activity:openActivity, categories:renderCategories, cleanup:renderCleanup, insights:openInsights, settings:renderSettings})[v]();
 }
 function renderFolder(){
   const parts = S.folder.split('\\'); const last = parts.pop();
@@ -561,12 +653,8 @@ function folderMenu(x, y){
   setTimeout(() => document.addEventListener('mousedown', outside), 0);
 }
 async function addFolder(){
-  const r = await api('add_folder', 'instant');
-  if (!r) return;
-  S.settings = r.settings; S.bg = r.background; renderBg();
-  const added = (S.settings.folders || []).slice(-1)[0];
-  toast('Watching ' + baseName(added?.path), 'New screenshots there are sorted instantly. Change it in Settings.');
-  if (S.view === 'settings') renderSettings(); if (S.view === 'activity') refreshActivity(true);
+  const p = await api('pick_folder_path');
+  if (p) previewFolders([p], {title: `Watch ${baseName(p)}?`});
 }
 
 /* ---------- activity ---------- */
@@ -598,7 +686,7 @@ async function openActivity(){
 async function refreshActivity(force){
   if (S.view !== 'activity') return;
   const r = await api('activity', 1500);
-  S.bg = r.status; S.jobs = r.jobs || []; S.unread = r.unread || []; renderBg();
+  S.bg = r.status; S.jobs = r.jobs || []; S.unread = r.unread || []; S.undone = r.undone || []; renderBg();
   const sig = r.entries.length + '|' + (r.entries[0] ? JSON.stringify(r.entries[0]) : '');
   const fresh = force || sig !== S.actSig;
   if (fresh) { S.actSig = sig; S.act = r.entries; }
@@ -616,12 +704,18 @@ function renderAttn(){
   const host = $('#actAttn'); if (!host) return;
   const un = (S.unread || []).filter(u => u.count > 0);
   const fetching = (S.jobs || []).some(j => j.kind === 'fetch_cloud');
-  if (!un.length) { host.innerHTML = ''; return; }
-  host.innerHTML = un.map(u => `<div class="attn">${icon('cloud')}<div class="tx">
+  // problems in the last day, one card per kind of problem, with the fix
+  const dayAgo = new Date(Date.now() - 864e5 - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 19);
+  const probs = {}; (S.act || []).filter(e => e.kind === 'error' && (e.t || '') >= dayAgo).forEach(e => { const f = fixFor(e.msg), k = f.tip || e.msg; (probs[k] = probs[k] || {f, e, n: 0}).n++; });
+  const probHtml = Object.values(probs).slice(0, 3).map(({f, e, n}) => `<div class="attn">${icon('alert')}<div class="tx"><b>${esc(f.tip || e.msg)}</b>
+      <p>${n > 1 ? `${n} problems like this in the last day. Latest: ` : ''}${esc(e.msg)}</p><div class="row">${fixButtons(e.msg)}</div></div></div>`).join('');
+  if (!un.length) { host.innerHTML = probHtml; host.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => runFix(b.dataset.fix)); return; }
+  host.innerHTML = probHtml + un.map(u => `<div class="attn">${icon('cloud')}<div class="tx">
       <b>${u.count.toLocaleString()} picture${u.count===1?'':'s'} in ${esc(baseName(u.folder))} ${u.count===1?'hasn’t':'haven’t'} been read yet</b>
       <p>${u.cloud ? `${u.cloud === u.count ? 'They are' : `${u.cloud.toLocaleString()} are`} online-only in OneDrive, so they aren't on this PC and can't be read until they're downloaded. ` : ''}Until then they stay loose or in “No Text”, and search can't find them.</p>
       <div class="row"><button class="btn primary mini" data-fetch="${esc(u.folder)}" ${fetching || S.busy ? 'disabled' : ''}>${icon('download')}${fetching ? 'Working on it…' : 'Download & sort them'}</button>
       <span class="muted" style="font-size:12px">Downloads them from OneDrive (they'll take up space on this PC), reads them two at a time and files each one.</span></div></div></div>`).join('');
+  host.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => runFix(b.dataset.fix));
   host.querySelectorAll('[data-fetch]').forEach(b => b.onclick = async () => {
     b.disabled = true; b.innerHTML = `${icon('download')}Working on it…`;
     refreshActivity(true);
@@ -690,13 +784,39 @@ function renderFeed(){
   if (!list.length) { host.innerHTML = `<div class="empty"><div class="art">${icon('activity')}</div><h3>Nothing here yet</h3><p>${S.act.length ? 'No activity matches these filters.' : 'When screenshots are sorted, moved or renamed, they show up here.'}</p></div>`; return; }
   let html = '', lastDay = '';
   const shown = list.slice(0, S.actShow);
-  shown.forEach((e, i) => {
-    const day = (e.t || '').slice(0, 10);
+  const undone = new Set(S.undone || []);
+  for (let i = 0; i < shown.length; ) {
+    const e = shown[i], day = (e.t || '').slice(0, 10);
     if (day !== lastDay) { html += `<div class="day">${esc(dayLabel(e.t))}</div>`; lastDay = day; }
-    html += evHtml(e, i);
-  });
+    // one sort that moved several files shows as a group with "Undo all"
+    let j = i + 1;
+    if (e.batch && (e.kind === 'move' || e.kind === 'rename')) while (j < shown.length && shown[j].batch === e.batch && (shown[j].t || '').slice(0, 10) === day) j++;
+    if (j - i >= 3) {
+      const grp = shown.slice(i, j), n = grp.length, cats = {};
+      grp.forEach(x => cats[x.cat] = (cats[x.cat] || 0) + 1);
+      const top = Object.entries(cats).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c, k]) => `${c} ${k}`).join(' · ');
+      const isUndone = undone.has(e.batch), weak = grp.filter(x => x.conf === 'weak').length;
+      html += `<div class="ev grp"><div class="ic">${icon('layers')}</div><div class="bd"><div class="l1"><span class="nm">${e.kind === 'rename' ? 'Renamed' : 'Sorted'} ${n} screenshots${e.folder ? ` in ${esc(baseName(e.folder))}` : ''}</span>
+          ${e.by === 'auto' ? `<span class="badge">Auto</span>` : `<span class="badge you">You</span>`}${isUndone ? `<span class="badge">Undone</span>` : ''}${weak ? `<span class="badge warn">${weak} to check</span>` : ''}</div>
+          <div class="l2">${esc(top)}</div></div><span class="tm">${hhmm(e.t)}</span>
+        <div class="acts" style="opacity:1"><button class="btn mini" data-tog="${i}">Show</button>${isUndone ? '' : `<button class="btn mini" data-undob="${esc(e.batch)}" data-n="${n}">${icon('undo')}Undo all ${n}</button>`}</div></div>
+        <div class="grp-body" id="gb-${i}" ${S.openGroups?.has(e.batch) ? '' : 'hidden'}>${grp.map((x, k) => evHtml(x, i + k, isUndone)).join('')}</div>`;
+    } else {
+      for (let k = i; k < j; k++) html += evHtml(shown[k], k, undone.has(shown[k].batch));
+    }
+    i = j;
+  }
   host.innerHTML = `<div class="feed">${html}</div>` + (list.length > S.actShow ? `<button class="btn more" id="actMore">Show more (${list.length - S.actShow} older)</button>` : '');
   $('#actMore') && ($('#actMore').onclick = () => { S.actShow += 500; renderFeed(); });
+  S.openGroups = S.openGroups || new Set();
+  host.querySelectorAll('[data-tog]').forEach(b => b.onclick = () => { const i = +b.dataset.tog, body = $('#gb-' + i), batch = shown[i].batch;
+    body.hidden = !body.hidden; b.textContent = body.hidden ? 'Show' : 'Hide'; body.hidden ? S.openGroups.delete(batch) : S.openGroups.add(batch); });
+  host.querySelectorAll('[data-undob]').forEach(b => b.onclick = async () => {
+    if (!await confirmBox('Undo this whole sort?', `Put all ${b.dataset.n} screenshots back where they were before this sort. Auto-sort will leave them alone afterwards.`, 'Undo all')) return;
+    try { const n = await api('undo_batch', b.dataset.undob); toast(`Moved ${n} screenshot${n===1?'':'s'} back`); refreshActivity(true); refreshReviewCount(); }
+    catch (err) { toast("Couldn't undo that sort", String(err), {err:true}); }
+  });
+  host.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => runFix(b.dataset.fix));
   host.querySelectorAll('[data-undo]').forEach(b => b.onclick = async () => {
     const e = shown[+b.dataset.undo];
     try { await api('undo_one', e.from, e.to); toast('Moved back', baseName(e.from)); refreshActivity(true); }
@@ -706,19 +826,39 @@ function renderFeed(){
   host.querySelectorAll('img.th').forEach(im => { im.onerror = () => im.replaceWith(Object.assign(document.createElement('div'), {className:'ic', innerHTML: icon('library')}));
     im.onclick = () => api('open', shown[+im.dataset.i].to); });
 }
-function evHtml(e, i){
+/** What a problem means in plain words, and buttons that fix it. */
+function fixFor(msg){
+  const m = String(msg || '').toLowerCase();
+  if (m.includes('cloud file provider') || m.includes('cloud operation')) return {tip: 'OneDrive isn’t running, so pictures that are online-only can’t be opened.', acts: [['onedrive', 'Start OneDrive'], ['retry', 'Try again']]};
+  if (m.includes('access is denied') || m.includes('being used by another process') || m.includes('os error 32') || m.includes('os error 5')) return {tip: 'Another program has the file open (or Windows blocked it). Close it, then try again.', acts: [['retry', 'Try again']]};
+  if (m.includes("can't watch")) return {tip: 'This folder can’t be watched. It may have been moved, renamed or deleted.', acts: [['settings', 'Folder settings']]};
+  if (m.includes("couldn't read")) return {tip: 'Windows couldn’t open these pictures. If they’re in OneDrive, make sure OneDrive is running.', acts: [['onedrive', 'Start OneDrive'], ['retry', 'Try again']]};
+  if (m.includes("couldn't move")) return {tip: 'The file couldn’t be moved. It may be open in another program, or the folder may be read-only.', acts: [['retry', 'Try again']]};
+  return {tip: '', acts: [['retry', 'Try again']]};
+}
+async function runFix(kind){
+  try {
+    if (kind === 'onedrive') { await api('start_onedrive'); toast('Starting OneDrive', 'Give it a minute to sign in, then press Try again.'); }
+    else if (kind === 'retry') { const n = await api('sort_all_now'); toast(n ? `Sorted ${n} screenshot${n===1?'':'s'}` : 'Nothing new to sort'); refreshActivity(true); }
+    else if (kind === 'settings') go('settings');
+  } catch (e) { toast("That didn't work", String(e), {err:true}); }
+}
+function fixButtons(msg){ return fixFor(msg).acts.map(([k, l]) => `<button class="btn mini" data-fix="${k}">${esc(l)}</button>`).join(''); }
+function evHtml(e, i, batchUndone=false){
   const tm = `<span class="tm">${hhmm(e.t)}</span>`;
   if (e.kind === 'info') return `<div class="ev info">${icon('clock')}<span style="flex:1">${esc(e.msg)}</span>${tm}</div>`;
-  if (e.kind === 'error') return `<div class="ev"><div class="ic err">${icon('alert')}</div><div class="bd"><div class="l1"><span class="nm" style="color:var(--danger)">${esc(e.msg)}</span></div>
-      <div class="l2">${esc(e.folder ? baseName(e.folder) : '')}</div></div>${tm}<div class="acts">${e.file ? `<button class="btn mini" data-show="${i}">${icon('open')}Show</button>` : ''}</div></div>`;
-  const by = e.by === 'auto' ? `<span class="badge">Auto</span>` : `<span class="badge you">You</span>`;
+  if (e.kind === 'error') { const f = fixFor(e.msg);
+    return `<div class="ev"><div class="ic err">${icon('alert')}</div><div class="bd"><div class="l1"><span class="nm" style="color:var(--danger)">${esc(e.msg)}</span></div>
+      <div class="l2">${esc(f.tip || (e.folder ? baseName(e.folder) : ''))}</div><div class="fixrow">${fixButtons(e.msg)}${e.file ? `<button class="btn mini" data-show="${i}">${icon('open')}Show</button>` : ''}</div></div>${tm}</div>`; }
+  const by = (e.by === 'auto' ? `<span class="badge">Auto</span>` : `<span class="badge you">You</span>`) +
+    (e.kind === 'move' && e.conf === 'weak' ? `<span class="badge warn" title="A close call. Check it on the Review page.">Check</span>` : '');
   const place = e.folder ? ` · ${esc(baseName(e.folder))}` : '';
   let line2;
   if (e.kind === 'rename') line2 = `Renamed from ${esc(baseName(e.from))}${place}`;
   else if (e.kind === 'undo') { const dir = baseName(e.to.replace(/[\\/][^\\/]+$/, ''));
     line2 = `Moved back to ${esc(dir)}${dir === baseName(e.folder) ? '' : place} · auto-sort will leave it alone`; }
   else line2 = `→ <span class="sw" style="background:${color(e.cat)}"></span>${esc(e.cat)}${e.why ? ` · ${esc(e.why)}` : ''}${place}`;
-  const undo = e.kind !== 'undo' ? `<button class="btn mini" data-undo="${i}" title="Put it back">${icon('undo')}Undo</button>` : '';
+  const undo = e.kind !== 'undo' && !batchUndone ? `<button class="btn mini" data-undo="${i}" title="Put it back">${icon('undo')}Undo</button>` : '';
   return `<div class="ev"><img class="th" loading="lazy" data-i="${i}" src="${img(e.to, 160)}"><div class="bd">
       <div class="l1"><span class="nm" title="${esc(e.to)}">${esc(baseName(e.to))}</span>${by}</div><div class="l2">${line2}</div></div>${tm}
       <div class="acts">${undo}<button class="btn mini" data-show="${i}">${icon('open')}Show</button></div></div>`;
@@ -734,25 +874,50 @@ function counts(){
   const order = (S.rules?.data.categories || []).map(x => x.name);
   return Object.entries(c).sort((a, b) => b[1] - a[1] || order.indexOf(a[0]) - order.indexOf(b[0]));
 }
-function visible(){ return S.filter === 'All' ? S.items : S.items.filter(it => it.c === S.filter); }
+function visible(){
+  let l = S.filter === 'All' ? S.items : S.items.filter(it => it.c === S.filter);
+  if (S.view === 'library' && S.libView === 'timeline') l = [...l].sort((a, b) => (b.d || '').localeCompare(a.d || ''));
+  return l;
+}
+function cardHtml(it, i){
+  return `<div class="card ${S.sel.has(it.p)?'sel':''}" draggable="true" data-i="${i}">
+      <div class="thumb"><img loading="lazy" decoding="async" src="${img(it.p, 480)}" onload="this.classList.add('ld');this.parentNode.classList.add('done')" onerror="this.parentNode.classList.add('done','bad')">
+        <div class="ph">${it.cloud ? `${icon('cloud')}Online-only in OneDrive<br>no preview yet` : `${icon('imageoff')}Can't show this picture`}</div>
+        ${it.cloud ? `<span class="cloudtag" title="Online-only in OneDrive: not downloaded to this PC">${icon('cloud')}</span>` : ''}
+        <span class="tag"><i style="background:${color(it.c)}"></i>${esc(it.c)}</span><span class="check"></span>
+        <span class="share" title="Drag out: drop into Discord, a browser or a folder">${icon('share')}</span></div>
+      <div class="meta"><div class="name">${esc(it.n)}</div><div class="why">${esc([(S.libAll || S.searchAll) ? it.f : '', it.r].filter(Boolean).join(' · ') || ' ')}</div></div></div>`;
+}
+/** Start a real Windows drag of these files (into Discord, a browser, Explorer...). */
+function dragOut(e, paths){ e.preventDefault(); e.stopPropagation(); api('drag_out', paths).catch(() => {}); }
 
 function renderSort(){
   const el = $('#v-sort');
   const planHead = S.mode === 'plan';
-  const title = S.mode === 'search' ? 'Search results' : 'Sort';
-  const sub = S.mode === 'search' ? `${S.items.length} screenshots contain “${esc(S.lastQuery)}”${S.searchAll ? ` · ${S.searchFolders} folders` : ''}`
+  const title = S.mode === 'search' ? (S.album ? esc(S.album) : 'Search results') : 'Sort';
+  const sub = S.mode === 'search' ? `${S.album ? 'Album · ' : ''}${S.items.length} screenshots contain “${esc(S.lastQuery)}”${S.searchAll ? ` · ${S.searchFolders} folders` : ''}`
     : S.items.length ? `${S.items.length} new screenshots · nothing moves until you press Sort now. Drag cards onto a category to change it.`
     : 'Preview where your new screenshots would go.';
   el.innerHTML = `<div class="vh"><div><h1>${title}</h1><div class="sub">${sub}</div></div>
     <div class="actions">
       ${S.mode === 'search' && (S.settings.folders || []).length ? `<div class="seg" id="scope"><button data-a="" class="${S.searchAll?'':'on'}">This folder</button><button data-a="1" class="${S.searchAll?'on':''}">All folders</button></div>` : ''}
+      ${S.mode === 'search' ? (S.album ? `<button class="btn" id="albDel">${icon('x')}Delete album</button>` : `<button class="btn" id="albSave">${icon('album')}Save as album</button>`) : ''}
       <input type="range" min="150" max="360" value="${S.cardSize}" id="sizeR" title="Thumbnail size">
       <button class="btn" data-busy id="undoB">${icon('undo')}Undo</button>
       <button class="btn" data-busy id="prevB">${icon('eye')}Preview</button>
       <button class="btn primary" data-busy id="sortB">${icon('play')}Sort now</button></div></div>
     <div class="chips" id="chips"></div><div id="gridHost"></div>`;
   $('#prevB').onclick = preview; $('#sortB').onclick = sortNow; $('#undoB').onclick = undo;
-  el.querySelectorAll('#scope button').forEach(b => b.onclick = () => { S.searchAll = !!b.dataset.a; doSearch(S.lastQuery); });
+  el.querySelectorAll('#scope button').forEach(b => b.onclick = () => { S.searchAll = !!b.dataset.a; doSearch(S.lastQuery, S.album); });
+  $('#albSave') && ($('#albSave').onclick = async () => {
+    const name = await prompt2('Save as album', `An album keeps this search one click away in the sidebar and updates itself as new screenshots come in.`, S.lastQuery);
+    if (!name) return;
+    S.albums = await api('save_album', name, S.lastQuery); S.album = name; renderAlbums(); renderSort(); toast(`Album “${name}” saved`, 'It’s in the sidebar.');
+  });
+  $('#albDel') && ($('#albDel').onclick = async () => {
+    if (!await confirmBox('Delete album', `Remove “${S.album}” from the sidebar? No screenshots are touched.`, 'Delete', true)) return;
+    S.albums = await api('delete_album', S.album); toast(`Album “${S.album}” deleted`); S.album = null; renderAlbums(); renderSort();
+  });
   $('#sizeR').oninput = e => { S.cardSize = +e.target.value; document.documentElement.style.setProperty('--card', S.cardSize + 'px'); };
   if (!S.items.length && S.mode === 'plan') {
     $('#gridHost', V()).innerHTML = `<div class="empty"><div class="art">${icon('sparkle')}</div><h3>Ready when you are</h3>
@@ -780,13 +945,22 @@ function renderGrid(){
   const host = $('#gridHost', V()); if (!host) return;
   const list = visible();
   if (!list.length) { host.innerHTML = `<div class="empty"><div class="art">${icon('library')}</div><h3>Nothing here</h3><p>No screenshots in this view.</p></div>`; updateSel(); return; }
-  host.innerHTML = `<div class="grid ${S.sel.size?'selecting':''}" id="grid">` + list.map((it, i) => `
-    <div class="card ${S.sel.has(it.p)?'sel':''}" draggable="true" data-i="${i}">
-      <div class="thumb"><img loading="lazy" decoding="async" src="${img(it.p, 480)}" onload="this.classList.add('ld');this.parentNode.classList.add('done')" onerror="this.parentNode.classList.add('done','bad')">
-        <div class="ph">${it.cloud ? `${icon('cloud')}Online-only in OneDrive<br>no preview yet` : `${icon('imageoff')}Can't show this picture`}</div>
-        ${it.cloud ? `<span class="cloudtag" title="Online-only in OneDrive: not downloaded to this PC">${icon('cloud')}</span>` : ''}
-        <span class="tag"><i style="background:${color(it.c)}"></i>${esc(it.c)}</span><span class="check"></span></div>
-      <div class="meta"><div class="name">${esc(it.n)}</div><div class="why">${esc(it.r || ' ')}</div></div></div>`).join('') + '</div>';
+  if (S.view === 'library' && S.libView === 'timeline') {
+    // months, then days, newest first; the rail on the right jumps to a month
+    const months = [];
+    list.forEach((it, i) => { const ym = (it.d || '0000-00').slice(0, 7), day = (it.d || '').slice(0, 10);
+      let m = months[months.length - 1]; if (!m || m.ym !== ym) months.push(m = {ym, days: []});
+      let d = m.days[m.days.length - 1]; if (!d || d.day !== day) m.days.push(d = {day, items: []});
+      d.items.push([it, i]); });
+    const mName = ym => ym === '0000-00' ? 'No date' : new Date(ym + '-01T12:00').toLocaleDateString(undefined, {month:'long', year:'numeric'});
+    const dName = d => d ? new Date(d + 'T12:00').toLocaleDateString(undefined, {weekday:'short', day:'numeric', month:'short'}) : '';
+    host.innerHTML = `<div class="tl"><div class="tl-main">${months.map(m => `<div class="tl-month" id="m-${m.ym}"><h3>${esc(mName(m.ym))} <span class="muted">· ${m.days.reduce((n, d) => n + d.items.length, 0)}</span></h3>
+        ${m.days.map(d => `<div class="tl-day">${esc(dName(d.day))} · ${d.items.length}</div><div class="grid ${S.sel.size?'selecting':''}">${d.items.map(([it, i]) => cardHtml(it, i)).join('')}</div>`).join('')}</div>`).join('')}</div>
+      <nav class="tl-rail">${months.map(m => `<button data-m="${m.ym}">${esc(mName(m.ym))}<small>${m.days.reduce((n, d) => n + d.items.length, 0)}</small></button>`).join('')}</nav></div>`;
+    host.querySelectorAll('.tl-rail button').forEach(b => b.onclick = () => document.getElementById('m-' + b.dataset.m)?.scrollIntoView({behavior:'smooth', block:'start'}));
+  } else {
+    host.innerHTML = `<div class="grid ${S.sel.size?'selecting':''}" id="grid">` + list.map((it, i) => cardHtml(it, i)).join('') + '</div>';
+  }
   const cards = host.querySelectorAll('.card');
   cards.forEach(card => {
     const it = list[+card.dataset.i];
@@ -802,6 +976,9 @@ function renderGrid(){
     card.ondragstart = e => { if (!S.sel.has(it.p)) { S.sel.clear(); S.sel.add(it.p); refreshSel(); }
       e.dataTransfer.setData('text/plain', 'cards'); document.querySelectorAll('.card.sel').forEach(c => c.classList.add('ghost')); };
     card.ondragend = () => document.querySelectorAll('.card.ghost').forEach(c => c.classList.remove('ghost'));
+    const sh = card.querySelector('.share');
+    sh.onmousedown = e => dragOut(e, S.sel.has(it.p) ? [...S.sel] : [it.p]);
+    sh.onclick = e => e.stopPropagation();
   });
   updateSel();
 }
@@ -809,8 +986,9 @@ function toggleSel(p){ S.sel.has(p) ? S.sel.delete(p) : S.sel.add(p); refreshSel
 function rangeSel(list, p){ const a = list.findIndex(x => x.p === S.last), b = list.findIndex(x => x.p === p);
   list.slice(Math.min(a, b), Math.max(a, b) + 1).forEach(x => S.sel.add(x.p)); refreshSel(); }
 function refreshSel(){
-  V().querySelectorAll('#grid .card').forEach(c => { const it = visible()[+c.dataset.i]; c.classList.toggle('sel', S.sel.has(it.p)); });
-  $('#grid', V())?.classList.toggle('selecting', S.sel.size > 0); updateSel();
+  const list = visible();
+  V().querySelectorAll('.card[data-i]').forEach(c => { const it = list[+c.dataset.i]; if (it) c.classList.toggle('sel', S.sel.has(it.p)); });
+  V().querySelectorAll('.grid').forEach(g => g.classList.toggle('selecting', S.sel.size > 0)); updateSel();
 }
 function updateSel(){
   const bar = $('#selbar'), n = S.sel.size;
@@ -820,10 +998,12 @@ function updateSel(){
   bar.innerHTML = `<b>${n}</b>&nbsp;selected
     <button class="btn" id="sbMove">${icon('move')}Move to…</button>
     <button class="btn" id="sbOpen">${icon('open')}Open</button>
+    <button class="btn" id="sbDrag" title="Hold and drag into Discord, a browser or a folder" style="cursor:grab">${icon('share')}Drag out</button>
     <button class="btn" id="sbAll">Select all</button>
     <button class="btn" id="sbClear">${icon('x')}</button>`;
   $('#sbMove').onclick = e => { const r = e.currentTarget.getBoundingClientRect(); moveMenu(r.left, r.top - 8, true); };
   $('#sbOpen').onclick = () => [...S.sel].slice(0, 8).forEach(p => api('open', p));
+  $('#sbDrag').onmousedown = e => dragOut(e, [...S.sel]);
   $('#sbAll').onclick = () => { visible().forEach(it => S.sel.add(it.p)); refreshSel(); };
   $('#sbClear').onclick = () => { S.sel.clear(); refreshSel(); };
 }
@@ -853,7 +1033,7 @@ async function moveSelection(cat){
   if (!paths.length) return;
   const from = new Set(paths.map(p => S.items.find(it => it.p === p).c));
   if (S.mode === 'plan') {
-    S.items.forEach(it => { if (paths.includes(it.p)) { it.c = cat; it.r = 'You chose this'; } });
+    S.items.forEach(it => { if (paths.includes(it.p)) { it.c = cat; it.r = 'You chose this'; it.conf = ''; } });
     toast(`${paths.length} will go to ${cat}`, 'Applied when you press Sort now');
   } else {
     const moved = await api('move', paths, cat);
@@ -883,7 +1063,7 @@ async function preview(){
   if (!r.items.length) toast('No new screenshots', 'Everything in this folder is already sorted.');
 }
 async function sortNow(){
-  const plan = S.mode === 'plan' && S.items.length ? S.items.map(it => ({p: it.p, c: it.c})) : null;
+  const plan = S.mode === 'plan' && S.items.length ? S.items.map(it => ({p: it.p, c: it.c, r: it.r, conf: it.conf})) : null;
   const r = await job('sort', {plan}, 'Sorting…');
   S.items = []; S.sel.clear(); S.mode = 'plan'; renderNav(); renderSort();
   toast(r.moved ? `Sorted ${r.moved} screenshot${r.moved>1?'s':''}` : 'Nothing to sort', r.moved ? 'Saved into category folders.' : 'No new screenshots in this folder.',
@@ -898,13 +1078,18 @@ async function undo(){
 /* library */
 async function openLibrary(){
   const el = $('#v-library');
-  el.innerHTML = `<div class="vh"><div><h1>Library</h1><div class="sub">Everything in this folder, by category. Right-click or drag to re-file.</div></div>
-    <div class="actions"><input type="range" min="150" max="360" value="${S.cardSize}" id="sizeL">
+  el.innerHTML = `<div class="vh"><div><h1>Library</h1><div class="sub">${S.libAll ? 'Everything in every folder' : 'Everything in this folder'}, by category. Right-click or drag to re-file.</div></div>
+    <div class="actions">
+      ${(S.settings.folders || []).length ? `<div class="seg" id="libScope"><button data-a="" class="${S.libAll?'':'on'}">This folder</button><button data-a="1" class="${S.libAll?'on':''}">All folders</button></div>` : ''}
+      <div class="seg" id="libView"><button data-v="grid" class="${S.libView!=='timeline'?'on':''}">${icon('library')}Grid</button><button data-v="timeline" class="${S.libView==='timeline'?'on':''}">${icon('calendar')}Timeline</button></div>
+      <input type="range" min="150" max="360" value="${S.cardSize}" id="sizeL">
     <button class="btn" data-busy id="renB">${icon('rename')}Readable names…</button>
     <button class="btn" data-busy id="undoL">${icon('undo')}Undo</button></div></div>
     <div class="chips" id="chips"></div><div id="gridHost"><div class="empty"><div class="art">${icon('library')}</div><h3>Loading…</h3></div></div>`;
   $('#sizeL').oninput = e => { S.cardSize = +e.target.value; document.documentElement.style.setProperty('--card', S.cardSize + 'px'); };
   $('#undoL').onclick = undo;
+  el.querySelectorAll('#libScope button').forEach(b => b.onclick = () => { S.libAll = !!b.dataset.a; S.filter = 'All'; openLibrary(); });
+  el.querySelectorAll('#libView button').forEach(b => b.onclick = () => { S.libView = b.dataset.v; el.querySelectorAll('#libView button').forEach(x => x.classList.toggle('on', x === b)); S.sel.clear(); renderGrid(); });
   $('#renB').onclick = async () => {
     if (!await confirmBox('Readable file names', 'Rename every sorted screenshot to something like “2026-10-13 234220 Chat - Alex.png”? Undo puts the old names back.', 'Rename')) return;
     const r = await job('rename', {}, 'Renaming…'); toast(`Renamed ${r.moved} files`, '', {action:'Undo', onAction: undo}); openLibrary();
@@ -917,12 +1102,12 @@ async function openLibrary(){
   // 1) show the remembered Library straight away
   let shown = '';
   try {
-    const snap = await api('library_snapshot');
+    const snap = await api('library_snapshot', !!S.libAll);
     if (snap.items?.length && S.view === 'library') { S.sel.clear(); show(snap.items); shown = snap.items.map(i => i.p + i.c).join('|'); }
   } catch (e) {}
   // 2) quietly check for changes, and only redraw if something changed
   try {
-    const r = await job('browse', {}, shown ? 'Checking for changes…' : 'Loading library…');
+    const r = await job('browse', {all: !!S.libAll}, shown ? 'Checking for changes…' : 'Loading library…');
     if (S.view !== 'library') return;
     if (r.items.map(i => i.p + i.c).join('|') !== shown) { if (!shown) S.sel.clear(); show(r.items); }
   } catch (e) {}
@@ -936,11 +1121,13 @@ function openDrawer(it){
     <div class="bd"><img src="${img(it.p, 820)}" id="dImg">
       <div class="kv"><span>Category</span><span><span class="pill"><span class="dot" style="background:${color(it.c)}"></span>${esc(it.c)}</span></span>
         <span>Why</span><span>${esc(it.r || '—')}</span></div>
-      <div style="display:flex;gap:8px;margin-bottom:14px"><button class="btn" id="dMove">${icon('move')}Move to…</button><button class="btn" id="dReveal">${icon('library')}Show in folder</button></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"><button class="btn" id="dMove">${icon('move')}Move to…</button><button class="btn" id="dReveal">${icon('library')}Show in folder</button>
+        <button class="btn" id="dDrag" title="Hold and drag into Discord, a browser or a folder" style="cursor:grab">${icon('share')}Drag out</button></div>
       <div style="font-weight:600;margin-bottom:6px">Text found</div><div class="ocr">${esc(it.t || 'No text found in this image.')}</div></div>`;
   d.classList.add('on');
   $('#dClose').onclick = closeDrawer; $('#dOpen').onclick = () => api('open', it.p); $('#dReveal').onclick = () => api('reveal', it.p);
   $('#dImg').onclick = () => openLightbox(visible().indexOf(it));
+  $('#dDrag').onmousedown = e => dragOut(e, [it.p]);
   $('#dMove').onclick = e => { S.sel.clear(); S.sel.add(it.p); const r = e.currentTarget.getBoundingClientRect(); moveMenu(r.left, r.bottom + 6); };
 }
 function closeDrawer(){ $('#drawer').classList.remove('on'); S.drawerItem = null; }
@@ -1074,9 +1261,14 @@ function renderDups(){
 /* ---------- insights ---------- */
 async function openInsights(){
   const el = $('#v-insights');
-  el.innerHTML = `<div class="vh"><div><h1>Insights</h1><div class="sub">What your screenshots are about, and when you take them.</div></div>
-    <div class="actions"><button class="btn primary" data-busy id="repB">${icon('report')}Full report (League, YouTube)</button></div></div><div id="insHost"></div>`;
+  S.insTab = S.insTab || 'overview';
+  el.innerHTML = `<div class="vh"><div><h1>Insights</h1><div class="sub">What your screenshots are about, and what they say.</div></div>
+    <div class="actions"><div class="seg" id="insTabs">${[['overview','Overview'],['league','League'],['youtube','YouTube']].map(([k, l]) => `<button data-t="${k}" class="${S.insTab===k?'on':''}">${l}</button>`).join('')}</div>
+    <button class="btn" data-busy id="repB">${icon('report')}Full report</button></div></div><div id="insHost"></div>`;
   $('#repB').onclick = async () => { await job('report', {}, 'Building report…'); toast('Report opened in your browser'); };
+  el.querySelectorAll('#insTabs button').forEach(b => b.onclick = () => { S.insTab = b.dataset.t; openInsights(); });
+  if (S.insTab === 'league') return renderLeague();
+  if (S.insTab === 'youtube') return renderYouTube();
   try {
     const r = await job('insights', {}, 'Counting…');
     const maxC = Math.max(...r.cats.map(c => c[1]), 1), maxM = Math.max(...r.months.map(m => m[1]), 1);
@@ -1111,11 +1303,16 @@ function renderSettings(){
         <input type="range" min="1" max="24" value="${s.interval_hours}" id="hours"></div>
       <div class="setting"><div class="lab">Show tray icon<small>Off = runs completely hidden. Stop it from here.</small></div>${sw('show_tray_icon', s.show_tray_icon)}</div>
       <div class="setting"><div class="lab">Start when I log in</div>${sw('start_tray_at_login', s.start_tray_at_login)}</div>
-      <div class="setting"><div class="lab">Notifications<small>Needs the tray icon.</small></div>${sw('notifications', s.notifications)}</div></div>
+      <div class="setting"><div class="lab">Notifications<small>Needs the tray icon.</small></div>${sw('notifications', s.notifications)}</div>
+      <div class="setting"><div class="lab">Summary notification<small>In the evening: how many were sorted and how many are worth a second look.</small></div>
+        <div class="seg" id="sumSeg">${[['off','Off'],['daily','Daily'],['weekly','Weekly']].map(([k, l]) => `<button data-v="${k}" class="${(s.summary||'daily')===k?'on':''}">${l}</button>`).join('')}</div></div>
+      <div class="setting fsetting"><div class="lab">Shrink older screenshots to AVIF<small>About 80% smaller. Originals are kept in the backup folder (Clean up). Online-only OneDrive files are skipped.</small></div>
+        <div class="seg" id="avifSeg">${[[0,'Off'],[7,'After 7 days'],[30,'30 days'],[90,'90 days']].map(([k, l]) => `<button data-v="${k}" class="${(s.auto_avif_days||0)===k?'on':''}">${l}</button>`).join('')}</div></div></div>
     <div class="box"><h2>${icon('sort')}Sorting</h2><p class="desc">How files are filed and named.</p>
       <div class="setting"><div class="lab">Month folders<small>League - Stats & Builds / 2026-10 / …</small></div>${sw('month_folders', s.month_folders)}</div>
       <div class="setting"><div class="lab">Readable file names<small>2026-10-13 234220 Chat - Alex.png</small></div>${sw('rename_files', s.rename_files)}</div>
       <div class="setting"><div class="lab">Sort by look<small>Screenshots without text are matched to similar sorted ones.</small></div>${sw('use_look', s.use_look)}</div>
+      <div class="setting"><div class="lab">Learn from Review<small>When you file a screenshot on the Review page, two telling words from it are added to that category.</small></div>${sw('learn_words', s.learn_words !== false)}</div>
       <div class="setting"><div class="lab">Read Arabic text</div>${sw('arabic', (s.languages||[]).includes('ar-SA'))}</div>
       <div class="setting"><div class="lab">Your names<small>Left out of file names for chats.</small></div><input class="field" id="names" value="${esc((s.your_names||[]).join(', '))}" style="width:180px"></div></div>
     <div class="box"><h2>${icon('robot')}Claude (optional)</h2><p class="desc">For screenshots still unsorted after the steps above. Only those are sent (downscaled) to Anthropic's API and cost a fraction of a cent each on your API account.</p>
@@ -1151,6 +1348,9 @@ function renderSettings(){
   });
   $('#addFold').onclick = addFolder;
   el.querySelectorAll('#zoomSeg button').forEach(b => b.onclick = () => setZoom(+b.dataset.z));
+  el.querySelectorAll('#sumSeg button').forEach(b => b.onclick = () => { el.querySelectorAll('#sumSeg button').forEach(x => x.classList.toggle('on', x === b)); save({summary: b.dataset.v}, b.dataset.v === 'off' ? 'Summary turned off' : `You'll get a ${b.dataset.v} summary in the evening`); });
+  el.querySelectorAll('#avifSeg button').forEach(b => b.onclick = () => { el.querySelectorAll('#avifSeg button').forEach(x => x.classList.toggle('on', x === b)); const d = +b.dataset.v;
+    save({auto_avif_days: d}, d ? `Screenshots older than ${d} days will be shrunk to AVIF` : 'Auto-shrink turned off'); });
   $('#hours').oninput = e => $('#hv').textContent = e.target.value;
   $('#hours').onchange = e => save({interval_hours: +e.target.value});
   $('#names').onchange = e => save({your_names: e.target.value.split(',').map(x => x.trim()).filter(Boolean)});
@@ -1182,11 +1382,277 @@ function renderUpd(){
   };
 }
 
+
+/* ---------- review queue ---------- */
+S.rv = null; S.rvTab = 'other'; S.rvIdx = 0; S.reviewCount = 0;
+async function refreshReviewCount(){
+  try { const c = await api('review_count'); S.reviewCount = (c.other || 0) + (c.weak || 0); renderNav(); } catch (e) {}
+}
+async function openReview(){
+  const el = $('#v-review');
+  el.innerHTML = `<div class="vh"><div><h1>Review</h1><div class="sub">Screenshots that didn't clearly fit a category. Press a number to file one; your choice teaches the rules.</div></div>
+    <div class="actions"><label class="muted" style="display:flex;gap:8px;align-items:center">Learn from my choices ${sw('learn_words', S.settings.learn_words !== false)}</label></div></div>
+    <div id="rvTabs" style="margin-bottom:12px"></div><div id="rvHost"><div class="empty"><p>Loading…</p></div></div>`;
+  $('#v-review .switch input').onchange = async e => { const r = await api('save_settings', {learn_words: e.target.checked}); S.settings = r.settings;
+    toast(e.target.checked ? 'Your choices will teach the rules' : 'Choices won’t add keywords'); };
+  S.rv = await api('review');
+  if (S.view !== 'review') return;
+  if (!S.rv[S.rvTab]?.length) S.rvTab = S.rv.other.length ? 'other' : S.rv.weak.length ? 'weak' : 'notext';
+  S.rvIdx = 0; renderReview(); refreshReviewCount();
+}
+function rvList(){ return (S.rv && S.rv[S.rvTab]) || []; }
+function renderReview(){
+  if (!S.rv) return;
+  const tabs = [['other', 'Unmatched'], ['weak', 'Worth a second look'], ['notext', 'No text']];
+  $('#rvTabs').innerHTML = `<div class="seg">${tabs.map(([k, l]) => `<button data-t="${k}" class="${S.rvTab===k?'on':''}">${l} <span class="muted">${S.rv[k].length.toLocaleString()}</span></button>`).join('')}</div>`;
+  $('#rvTabs').querySelectorAll('button').forEach(b => b.onclick = () => { S.rvTab = b.dataset.t; S.rvIdx = 0; renderReview(); });
+  const list = rvList(), host = $('#rvHost');
+  if (!list.length) {
+    host.innerHTML = `<div class="empty"><div class="art">${icon('check')}</div><h3>All clear</h3><p>${S.rvTab === 'weak' ? 'No close calls to check.' : S.rvTab === 'other' ? 'Every screenshot matched a category.' : 'No pictures without text.'}</p></div>`; return;
+  }
+  S.rvIdx = Math.max(0, Math.min(S.rvIdx, list.length - 1));
+  const it = list[S.rvIdx];
+  const names = (S.rules?.data.categories || []).map(c => c.name);
+  host.innerHTML = `<div class="rv"><div class="rv-list" id="rvList">${list.slice(0, 600).map((x, i) => `<div class="rv-it ${i===S.rvIdx?'on':''}" data-i="${i}">
+        ${x.cloud ? `<div class="ph2"></div>` : `<img loading="lazy" src="${img(x.p, 160)}">`}<div class="tx"><b>${esc(x.n)}</b><span>${esc(x.f || '')}</span></div></div>`).join('')}
+        ${list.length > 600 ? `<div class="muted" style="padding:8px">+ ${(list.length - 600).toLocaleString()} more</div>` : ''}</div>
+    <div class="rv-stage"><div class="rv-img">${it.cloud ? `<div class="empty">${icon('cloud')}<p>Online-only in OneDrive: no preview until it’s downloaded.</p></div>` : `<img src="${img(it.p, 1400)}" id="rvImg" title="Double-click to open">`}</div>
+      <div class="rv-why"><b>${esc(it.n)}</b> · ${esc(it.f || '')} · now in <span class="pill"><span class="dot" style="background:${color(it.c)}"></span>${esc(it.c)}</span>
+        <br>${S.rvTab === 'weak' ? 'Filed automatically, but it was a close call' : 'Why it’s here'}: ${esc(it.r || '—')}</div>
+      ${it.t ? `<details><summary class="muted" style="cursor:pointer">Text found</summary><div class="ocr" style="margin-top:6px">${esc(it.t)}</div></details>` : ''}
+      <div class="keys">${S.rvTab === 'weak' ? `<button class="key ok" data-ok><kbd>↵</kbd>${icon('check')}<span>Looks right</span></button>` : ''}
+        ${names.slice(0, 9).map((n, i) => `<button class="key" data-c="${esc(n)}"><kbd>${i + 1}</kbd><span class="sw" style="background:${color(n)}"></span><span>${esc(n)}</span></button>`).join('')}
+        <button class="key" data-more><kbd>…</kbd><span>Other category…</span></button></div>
+      <div class="rv-foot"><button class="btn mini" data-prev>${icon('left')}Back</button><button class="btn mini" data-skip>Skip${icon('right')}</button>
+        <button class="btn mini" data-show>${icon('open')}Show in folder</button><button class="btn mini" data-drag style="cursor:grab">${icon('share')}Drag out</button>
+        <span style="margin-left:auto">${S.rvIdx + 1} of ${list.length.toLocaleString()} · keys 1–9 file it, ← → move, S skips</span></div></div></div>`;
+  host.querySelectorAll('.rv-it').forEach(r => r.onclick = () => { S.rvIdx = +r.dataset.i; renderReview(); });
+  host.querySelector('.rv-it.on')?.scrollIntoView({block:'nearest'});
+  host.querySelectorAll('[data-c]').forEach(b => b.onclick = () => rvFile(b.dataset.c));
+  $('[data-ok]', host) && ($('[data-ok]', host).onclick = rvOk);
+  $('[data-more]', host).onclick = e => { S.sel.clear(); S.sel.add(it.p); const r = e.currentTarget.getBoundingClientRect(); rvMoreMenu(r.left, r.top - 8); };
+  $('[data-prev]', host).onclick = () => { S.rvIdx--; renderReview(); };
+  $('[data-skip]', host).onclick = () => { S.rvIdx++; renderReview(); };
+  $('[data-show]', host).onclick = () => api('reveal', it.p);
+  $('[data-drag]', host).onmousedown = e => dragOut(e, [it.p]);
+  $('#rvImg') && ($('#rvImg').ondblclick = () => api('open', it.p));
+}
+function rvMoreMenu(x, y){
+  closeMenu();
+  const names = [...(S.rules?.data.categories || []).map(c => c.name), S.rules?.data.fallback || 'Other', S.rules?.data.no_text || 'No Text'];
+  const m = document.createElement('div'); m.className = 'menu'; m.id = 'menu';
+  m.innerHTML = `<div class="lbl">File it in</div>` + names.map(n => `<button data-c="${esc(n)}"><span class="sw" style="background:${color(n)}"></span>${esc(n)}</button>`).join('') + `<div class="sep"></div><button data-new>${icon('plus')}New category…</button>`;
+  document.body.appendChild(m);
+  const r = m.getBoundingClientRect(); m.style.left = Math.min(x, innerWidth - r.width - 10) + 'px'; m.style.top = Math.max(10, y - r.height) + 'px';
+  m.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { closeMenu(); rvFile(b.dataset.c); });
+  $('[data-new]', m).onclick = async () => { closeMenu(); const n = await prompt2('New category', 'Name for the new category:'); if (n) rvFile(n); };
+  setTimeout(() => document.addEventListener('mousedown', outside), 0);
+}
+async function rvFile(cat){
+  const list = rvList(), it = list[S.rvIdx]; if (!it) return;
+  if (cat === it.c) return rvOk();
+  const moved = await api('move', [it.p], cat), to = moved[it.p];
+  if (!to) { toast("Couldn't move it", 'It may be open in another program.', {err:true}); return; }
+  list.splice(S.rvIdx, 1);
+  let learned = [];
+  const special = [S.rules?.data.fallback, S.rules?.data.no_text].includes(cat);
+  if (S.settings.learn_words !== false && !special && (it.t || '').trim().length >= 15) {
+    try { const words = (await api('suggest', [to], cat)).slice(0, 2);
+      if (words.length) { S.rules = await api('add_keywords', cat, words, 1); S.colors = S.rules.colors; learned = words; } } catch (e) {}
+  }
+  toast(`Filed in ${cat}`, learned.length ? `Learned: ${learned.join(', ')}` : '', {action: 'Undo', onAction: async () => { await api('undo_one', it.p, to); openReview(); }});
+  renderReview(); refreshReviewCount();
+}
+async function rvOk(){
+  const list = rvList(), it = list[S.rvIdx]; if (!it) return;
+  if (S.rvTab === 'weak') await api('review_ok', [it.p]);
+  list.splice(S.rvIdx, 1); renderReview(); refreshReviewCount();
+}
+document.addEventListener('keydown', e => {
+  if (S.view !== 'review' || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || $('#modal').classList.contains('on') || e.ctrlKey || e.altKey) return;
+  const names = (S.rules?.data.categories || []).map(c => c.name);
+  if (/^[1-9]$/.test(e.key) && names[+e.key - 1]) { e.preventDefault(); rvFile(names[+e.key - 1]); }
+  else if (e.key === 'Enter' && S.rvTab === 'weak') { e.preventDefault(); rvOk(); }
+  else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 's') { e.preventDefault(); S.rvIdx++; renderReview(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); S.rvIdx--; renderReview(); }
+});
+
+/* ---------- smart albums ---------- */
+S.albums = [];
+async function loadAlbums(){ try { S.albums = await api('albums'); renderAlbums(); } catch (e) {} }
+function renderAlbums(){
+  const host = $('#albums'); if (!host) return;
+  host.innerHTML = `<div class="ah">Albums<button title="New album from a search" id="albNew">${icon('plus')}</button></div>` +
+    (S.albums.length ? S.albums.map((a, i) => `<button class="al ${S.album===a.name && S.view==='sort'?'on':''}" data-i="${i}" title="Screenshots containing “${esc(a.q)}”">${icon('album')}<span>${esc(a.name)}</span><small>${a.count}</small></button>`).join('')
+      : `<div class="muted" style="padding:2px 10px;font-size:12px">Search, then “Save as album”.</div>`);
+  host.querySelectorAll('.al').forEach(b => b.onclick = () => { const a = S.albums[+b.dataset.i]; S.navigated = true; doSearch(a.q, a.name); });
+  $('#albNew').onclick = async () => { const q = await prompt2('New album', 'Show every screenshot whose text contains:', ''); if (!q) return;
+    S.albums = await api('save_album', q, q); renderAlbums(); doSearch(q, q); };
+}
+
+/* ---------- charts (one axis each, thin marks, hover tips) ---------- */
+function tipOn(host){
+  const tip = $('#ctip');
+  host.querySelectorAll('[data-tip]').forEach(el => {
+    el.onmouseenter = () => { tip.innerHTML = el.dataset.tip; tip.style.display = 'block'; el.parentNode.classList?.add('hov'); };
+    el.onmousemove = e => { tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + 'px'; tip.style.top = (e.clientY - tip.offsetHeight - 10) + 'px'; };
+    el.onmouseleave = () => { tip.style.display = 'none'; el.parentNode.classList?.remove('hov'); };
+  });
+}
+function chartW(){ const h = $('#insHost'); return Math.max(340, Math.round((h ? h.clientWidth : 760) - 40)); }
+/** Tick positions (0..1) that land on round numbers: 0 1 2 3 4 5, 0 5 10 15 20... */
+function tickFracs(span){
+  const nice = x => { const m = 10 ** Math.floor(Math.log10(x)), k = +(x / m).toFixed(6); return [1, 2, 2.5, 5].includes(k); };
+  for (const n of [5, 4, 6, 3]) if (span > 0 && nice(span / n)) return [...Array(n + 1).keys()].map(i => i / n);
+  return [0, .25, .5, .75, 1];
+}
+function niceMax(v){ if (v <= 5) return 5; const m = 10 ** Math.floor(Math.log10(v)); for (const k of [1, 2, 2.5, 5, 10]) if (v <= k * m) return k * m; return v; }
+const fmtN = v => v >= 1e6 ? (v / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : v >= 1e4 ? Math.round(v / 1e3) + 'K' : v >= 1e3 ? (v / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : String(Math.round(v * 10) / 10);
+/** points: [{x: 'YYYY-MM-DD HH:MM', y, tip}] — one series, time along the bottom. */
+function lineChart(points, {yMin = null, yMax = null, yTicks = null, color = 'var(--s1)'} = {}){
+  const W = chartW(), H = 230, L = 64, R = 14, T = 12, B = 26;
+  const xs = points.map(p => new Date(p.x.replace(' ', 'T')).getTime());
+  const x0 = Math.min(...xs), x1 = Math.max(...xs) === x0 ? x0 + 864e5 : Math.max(...xs);
+  const lo = yMin ?? Math.min(0, ...points.map(p => p.y)), hi = yMax ?? niceMax(Math.max(...points.map(p => p.y)) || 1);
+  const X = t => L + (W - L - R) * (t - x0) / (x1 - x0), Y = v => T + (H - T - B) * (1 - (v - lo) / ((hi - lo) || 1));
+  const ticks = yTicks || tickFracs(hi - lo).map(f => ({v: lo + (hi - lo) * f, l: fmtN(lo + (hi - lo) * f)}));
+  let svg = `<svg class="chart2" viewBox="0 0 ${W} ${H}" role="img">`;
+  ticks.forEach(t => { const y = Y(t.v); svg += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y}" y2="${y}"/><text class="tick" x="${L - 6}" y="${y + 4}" text-anchor="end">${esc(t.l)}</text>`; });
+  const fmtD = t => new Date(t).toLocaleDateString(undefined, {day:'numeric', month:'short', year: (x1 - x0) > 300 * 864e5 ? '2-digit' : undefined});
+  [x0, (x0 + x1) / 2, x1].forEach((t, i) => svg += `<text class="tick" x="${X(t)}" y="${H - 6}" text-anchor="${['start', 'middle', 'end'][i]}">${fmtD(t)}</text>`);
+  svg += `<line class="axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>`;
+  if (points.length > 1) svg += `<path class="ln" stroke="${color}" d="${points.map((p, i) => `${i ? 'L' : 'M'}${X(xs[i]).toFixed(1)},${Y(p.y).toFixed(1)}`).join(' ')}"/>`;
+  points.forEach((p, i) => svg += `<g><circle class="hit" cx="${X(xs[i])}" cy="${Y(p.y)}" r="11" data-tip="${esc(p.tip)}"/><circle class="pt" cx="${X(xs[i])}" cy="${Y(p.y)}" r="4" fill="${color}"/></g>`);
+  return svg + '</svg>';
+}
+/** groups: [{label, values:[a,b]}], two series side by side, 2px gap, rounded tops. */
+function columnChart(groups, names, colors){
+  const W = chartW(), H = 230, L = 44, R = 10, T = 12, B = 26;
+  const hi = niceMax(Math.max(1, ...groups.flatMap(g => g.values)));
+  const gw = (W - L - R) / Math.max(groups.length, 1), k = names.length, bw = Math.min(22, (gw * 0.72 - 2 * (k - 1)) / k);
+  const Y = v => T + (H - T - B) * (1 - v / hi);
+  let svg = `<svg class="chart2" viewBox="0 0 ${W} ${H}" role="img">`;
+  tickFracs(hi).forEach(f => { const y = Y(hi * f); svg += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y}" y2="${y}"/><text class="tick" x="${L - 6}" y="${y + 4}" text-anchor="end">${fmtN(hi * f)}</text>`; });
+  groups.forEach((g, gi) => {
+    const gx = L + gi * gw + (gw - (bw * k + 2 * (k - 1))) / 2;
+    g.values.forEach((v, si) => { const x = gx + si * (bw + 2), y = Y(v), h = H - B - y, r = Math.min(4, bw / 2, h);
+      if (h > 0) svg += `<path fill="${colors[si]}" d="M${x},${H - B} V${y + r} Q${x},${y} ${x + r},${y} H${x + bw - r} Q${x + bw},${y} ${x + bw},${y + r} V${H - B} Z"/>`;
+      svg += `<rect class="hit" x="${x - 1}" y="${T}" width="${bw + 2}" height="${H - T - B}" data-tip="${esc(g.label)} · ${esc(names[si])}: ${v}"/>`; });
+    if (groups.length <= 14 || gi % Math.ceil(groups.length / 14) === 0) svg += `<text class="tick" x="${gx + bw * k / 2}" y="${H - 6}" text-anchor="middle">${esc(g.label)}</text>`;
+  });
+  return svg + `<line class="axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/></svg>`;
+}
+const legend = (names, colors) => `<div class="legend">${names.map((n, i) => `<span><i style="background:${colors[i]}"></i>${esc(n)}</span>`).join('')}</div>`;
+const shortD = d => new Date(d.replace(' ', 'T')).toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'});
+
+async function renderLeague(){
+  const host = $('#insHost'); host.innerHTML = `<div class="empty"><p>Reading League screenshots…</p></div>`;
+  const r = await api('league'); if (S.insTab !== 'league' || S.view !== 'insights') return;
+  if (!r.games.length && !r.ranks.length) { host.innerHTML = `<div class="empty"><div class="art">${icon('insights')}</div><h3>No League numbers found yet</h3>
+    <p>This reads end-of-game and profile screenshots in your League categories (${r.screens} checked). Screenshots of a single game result (Victory/Defeat with a KDA) and rank (like “Diamond II 45 LP”) show up here.</p></div>`; return; }
+  const n = r.games.length, wr = n ? Math.round(100 * r.wins / n) : 0, last = r.ranks[r.ranks.length - 1];
+  const kdas = r.games.filter(g => g.kda), avg = kdas.length ? kdas.reduce((s, g) => s + (g.kda[0] + g.kda[2]) / Math.max(1, g.kda[1]), 0) / kdas.length : 0;
+  // wins/losses per week (weeks start on Monday)
+  const wk = {}; r.games.forEach(g => { const d = new Date(g.d.slice(0, 10) + 'T12:00'); d.setDate(d.getDate() - (d.getDay() + 6) % 7);
+    const k = d.toISOString().slice(0, 10); (wk[k] = wk[k] || [0, 0])[g.r === 'W' ? 0 : 1]++; });
+  const weeks = Object.keys(wk).sort().slice(-20).map(k => ({label: new Date(k + 'T12:00').toLocaleDateString(undefined, {day:'numeric', month:'short'}), values: wk[k]}));
+  const TIERS = ['Iron', 'Bronze', 'Silver', 'Gold', 'Plat', 'Emerald', 'Diamond', 'Master'];
+  let rankChart = '';
+  if (r.ranks.length) {
+    const lo = Math.max(0, Math.floor(Math.min(...r.ranks.map(x => x.score)) / 400) * 400), hiR = Math.ceil((Math.max(...r.ranks.map(x => x.score)) + 1) / 400) * 400;
+    const ticks = []; for (let v = lo; v <= hiR; v += 400) ticks.push({v, l: v < 2800 ? TIERS[v / 400] : v === 2800 ? 'Master' : `Master +${v - 2800}`});
+    rankChart = lineChart(r.ranks.map(x => ({x: x.d, y: x.score, tip: `<b>${esc(x.label)}</b><br>${shortD(x.d)}`})), {yMin: lo, yMax: hiR, yTicks: ticks});
+  }
+  host.innerHTML = `<div class="tiles">
+      <div class="tile"><div class="big">${n}</div><div class="lbl">games found</div></div>
+      <div class="tile"><div class="big">${r.wins}–${r.losses}</div><div class="lbl">wins–losses (${wr}%)</div></div>
+      <div class="tile"><div class="big">${avg ? avg.toFixed(2) : '–'}</div><div class="lbl">average KDA</div></div>
+      <div class="tile"><div class="big" style="font-size:20px;padding-top:6px">${last ? esc(last.label) : '–'}</div><div class="lbl">latest rank seen${last ? ` · ${shortD(last.d)}` : ''}</div></div></div>
+    <div class="cards charts">
+      ${r.ranks.length ? `<div class="box"><h2>${icon('insights')}Rank over time</h2><p class="desc">Each dot is a screenshot that showed your rank and LP.</p><div class="chartbox">${rankChart}</div></div>` : ''}
+      ${weeks.length ? `<div class="box"><h2>${icon('calendar')}Wins and losses per week</h2><p class="desc">From screenshots of single game results.</p>${legend(['Wins', 'Losses'], ['var(--s1)', 'var(--s2)'])}<div class="chartbox">${columnChart(weeks, ['Wins', 'Losses'], ['var(--s1)', 'var(--s2)'])}</div></div>` : ''}
+      ${kdas.length > 1 ? `<div class="box"><h2>${icon('bolt')}KDA per game</h2><p class="desc">(Kills + assists) ÷ deaths.</p><div class="chartbox">${lineChart(kdas.map(g => ({x: g.d, y: Math.round(100 * (g.kda[0] + g.kda[2]) / Math.max(1, g.kda[1])) / 100,
+        tip: `<b>${g.r === 'W' ? 'Victory' : 'Defeat'}</b> ${g.kda.join('/')}<br>${shortD(g.d)}`})))}</div></div>` : ''}
+    </div>
+    <div class="box" style="margin-top:16px"><h2>Recent games</h2><table class="tbl"><thead><tr><th>Date</th><th>Result</th><th>KDA</th><th>LP</th><th></th></tr></thead><tbody>
+      ${r.games.slice(-40).reverse().map(g => `<tr><td>${esc(shortD(g.d))}</td><td>${g.r === 'W' ? 'Victory' : 'Defeat'}</td><td>${g.kda ? g.kda.join(' / ') : '–'}</td><td>${g.lp == null ? '–' : (g.lp > 0 ? '+' : '') + g.lp}</td>
+        <td><button class="btn mini" data-open="${esc(g.p)}">${icon('open')}</button></td></tr>`).join('')}</tbody></table></div>`;
+  host.querySelectorAll('[data-open]').forEach(b => b.onclick = () => api('open', b.dataset.open));
+  tipOn(host);
+}
+async function renderYouTube(){
+  const host = $('#insHost'); host.innerHTML = `<div class="empty"><p>Reading YouTube Studio screenshots…</p></div>`;
+  const r = await api('youtube'); if (S.insTab !== 'youtube' || S.view !== 'insights') return;
+  if (!r.points.length) { host.innerHTML = `<div class="empty"><div class="art">${icon('insights')}</div><h3>No YouTube Studio numbers found yet</h3>
+    <p>Screenshots of YouTube Studio analytics (views, watch time, subscribers, impressions) show up here. ${r.screens} checked.</p></div>`; return; }
+  const metrics = [['views', 'Views'], ['watch', 'Watch time (hours)'], ['subs', 'Subscribers gained'], ['impr', 'Impressions']];
+  const latest = k => { const p = [...r.points].reverse().find(p => p[k] != null); return p ? fmtN(p[k]) : '–'; };
+  host.innerHTML = `<div class="tiles">${metrics.map(([k, l]) => `<div class="tile"><div class="big">${latest(k)}</div><div class="lbl">${l} (latest)</div></div>`).join('')}</div>
+    <p class="muted" style="margin:-4px 0 12px">Each dot is a Studio screenshot. Studio usually shows totals for a period (like the last 28 days), so these are snapshots, not daily numbers.</p>
+    <div class="cards charts">${metrics.map(([k, l]) => { const pts = r.points.filter(p => p[k] != null); return pts.length ? `<div class="box"><h2>${esc(l)}</h2>
+      <div class="chartbox">${lineChart(pts.map(p => ({x: p.d, y: p[k], tip: `<b>${fmtN(p[k])}</b> ${esc(l.toLowerCase())}<br>${shortD(p.d)}`})))}</div></div>` : ''; }).join('')}</div>
+    <div class="box" style="margin-top:16px"><h2>All snapshots</h2><table class="tbl"><thead><tr><th>Date</th>${metrics.map(([, l]) => `<th>${l}</th>`).join('')}<th></th></tr></thead><tbody>
+      ${[...r.points].reverse().slice(0, 60).map(p => `<tr><td>${esc(shortD(p.d))}</td>${metrics.map(([k]) => `<td>${p[k] == null ? '–' : fmtN(p[k])}</td>`).join('')}<td><button class="btn mini" data-open="${esc(p.p)}">${icon('open')}</button></td></tr>`).join('')}</tbody></table></div>`;
+  host.querySelectorAll('[data-open]').forEach(b => b.onclick = () => api('open', b.dataset.open));
+  tipOn(host);
+}
+
+/* ---------- first run & "watch a folder" preview ---------- */
+function wideModal(html, setup){ const close = modal(html, setup); $('#modal .modal').classList.add('wide'); return close; }
+async function openSetup(){
+  const sug = await api('suggest_folders');
+  const chosen = new Map(sug.map(f => [f.path, f.suggest && !f.watched]));
+  const draw = (m, close) => {
+    m.innerHTML = `<div class="steps">Step 1 of 2</div><h3>Welcome to Screenshot Sorter</h3>
+      <p>Pick the folders where your screenshots land. Next you'll see exactly what would happen before anything moves.</p>
+      <div id="fl">${[...chosen.keys()].map(p => { const f = sug.find(x => x.path === p) || {loose: '?'};
+        return `<label class="fchoice ${chosen.get(p)?'on':''}"><input type="checkbox" data-p="${esc(p)}" ${chosen.get(p)?'checked':''}><div class="tx"><b>${esc(baseName(p))}</b><small>${esc(p)}</small></div>
+          <span class="badge">${f.loose === '?' ? 'chosen by you' : `${f.loose} loose picture${f.loose===1?'':'s'}`}</span></label>`; }).join('') || '<p class="muted">No usual screenshot folders found. Add yours below.</p>'}</div>
+      <button class="btn" id="suAdd">${icon('plus')}Add another folder…</button>
+      <div class="foot"><button class="btn" data-x>Not now</button><button class="btn primary" data-ok ${[...chosen.values()].some(Boolean)?'':'disabled'}>Next: preview</button></div>`;
+    m.querySelectorAll('input[data-p]').forEach(i => i.onchange = () => { chosen.set(i.dataset.p, i.checked); draw(m, close); });
+    $('#suAdd', m).onclick = async () => { const p = await api('pick_folder_path'); if (p) { chosen.set(p, true); draw(m, close); } };
+    $('[data-x]', m).onclick = async () => { close(); const r = await api('save_settings', {setup_done: true}); S.settings = r.settings; toast('You can add folders any time', 'Settings → Auto-sort, or the folder button at the top.'); };
+    $('[data-ok]', m).onclick = () => { close(); previewFolders([...chosen].filter(([, v]) => v).map(([p]) => p), {title: 'Here’s what would happen', step: 'Step 2 of 2', setup: true}); };
+  };
+  wideModal('', (m, close) => draw(m, close));
+}
+/** Show what watching these folders would do (counts per category), then let the user choose how to watch them. */
+async function previewFolders(paths, {title, step = '', setup = false} = {}){
+  let res;
+  try { res = await job('preview_folders', {paths}, 'Reading screenshots to preview…'); } catch (e) { return; }
+  const modes = new Map(paths.map(p => [p, 'instant']));
+  wideModal(`${step ? `<div class="steps">${step}</div>` : ''}<h3>${esc(title)}</h3>
+    <p>Nothing has moved yet. Choose how each folder is sorted; “Instantly” files the pictures below right away and every new screenshot from now on.</p>
+    ${res.map((f, i) => `<div class="pv"><h4>${icon('folder')}${esc(baseName(f.path))}</h4><div class="muted" style="font-size:12.5px">${esc(f.path)}</div>
+      <div style="margin-top:8px">${f.loose ? `<b>${f.moves.toLocaleString()}</b> of ${f.loose.toLocaleString()} loose picture${f.loose===1?'':'s'} would be filed` : 'No loose pictures right now; new screenshots will be filed as they arrive'}${f.sorted ? ` · ${f.sorted.toLocaleString()} already in category folders stay put` : ''}.</div>
+      ${f.cats.length ? `<div class="cats">${f.cats.map(([c, n]) => `<span class="pill"><span class="dot" style="background:${color(c)}"></span>${esc(c)} ${n}</span>`).join('')}</div>` : ''}
+      ${f.unsure ? `<div class="muted" style="font-size:12.5px">${f.unsure} would be close calls or unmatched; they'll wait for you on the Review page.</div>` : ''}
+      ${f.skipped ? `<div class="muted" style="font-size:12.5px">${f.skipped} can't be read right now (for example online-only in OneDrive) and will be left alone.</div>` : ''}
+      <div class="seg" data-i="${i}" style="margin-top:10px">${[['instant','Instantly'],['interval','Every few hours'],['off','Don’t sort it']].map(([k, l]) => `<button data-m="${k}" class="${k==='instant'?'on':''}">${l}</button>`).join('')}</div></div>`).join('')}
+    <div class="foot"><button class="btn" data-x>${setup ? 'Not now' : 'Cancel'}</button><button class="btn primary" data-ok>Start</button></div>`, (m, close) => {
+      m.querySelectorAll('.seg[data-i]').forEach(seg => seg.querySelectorAll('button').forEach(b => b.onclick = () => {
+        seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); modes.set(res[+seg.dataset.i].path, b.dataset.m); }));
+      $('[data-x]', m).onclick = async () => { close(); if (setup) { const r = await api('save_settings', {setup_done: true}); S.settings = r.settings; } };
+      $('[data-ok]', m).onclick = async () => {
+        close(); let r = null;
+        for (const [p, mode] of modes) if (mode !== 'off') r = await api('set_folder_mode', p, mode);
+        if (setup) r = await api('save_settings', {setup_done: true});
+        if (r) { S.settings = r.settings; S.bg = r.background; renderBg(); }
+        const n = [...modes.values()].filter(x => x !== 'off').length;
+        toast(n ? `Watching ${n} folder${n===1?'':'s'}` : 'Nothing changed', n ? 'Follow along on the Activity page.' : '');
+        if (S.view === 'settings') renderSettings(); if (n) go('activity');
+      };
+    });
+}
+
 /* ---------- search, keys, boot ---------- */
-async function doSearch(q){
+async function doSearch(q, album=null){
   if (!q) return;
+  if (album) S.searchAll = true;  // albums always look in every folder
   const r = await job('search', {q, all: !!S.searchAll}, 'Searching…');
   S.searchFolders = r.folders || 1; S.mode = 'search'; S.lastQuery = q; S.items = r.items; S.filter = 'All'; S.sel.clear(); S.view = 'sort'; go('sort');
+  S.album = album; renderSort(); renderAlbums();
 }
 async function setZoom(z){
   z = Math.round(Math.min(1.6, Math.max(0.6, z)) * 100) / 100;
@@ -1219,6 +1685,8 @@ renderNav();
   if (!S.navigated) go('sort'); else { renderNav(); if (S.view === 'library') openLibrary(); }  // keep a screen picked while starting
   setInterval(async () => { S.bg = await api('background_status'); renderBg(); }, 8000);
   if (AUTO === 'preview') preview();
+  loadAlbums(); refreshReviewCount(); setInterval(() => { refreshReviewCount(); loadAlbums(); }, 60000);
+  if (!(S.settings.folders || []).length && !S.settings.setup_done && AUTO !== 'preview') openSetup();
   if (S.settings.check_updates !== false) setTimeout(async () => { try { S.upd = await api('check_update', false); renderUpd(); } catch {} }, 1500);
 })();
 </script>

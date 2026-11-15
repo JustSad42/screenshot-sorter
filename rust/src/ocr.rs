@@ -171,11 +171,15 @@ pub fn ocr_files_ex(paths: &[PathBuf], progress: Progress, log: Log, download: b
         let done = AtomicUsize::new(0);
         let total = todo.len();
         let run = |f: &(dyn Fn() -> Vec<(PathBuf, Option<String>)> + Sync)| if download { CLOUD_POOL.install(f) } else { POOL.install(f) };
+        let failed: Mutex<Vec<(PathBuf, String)>> = Mutex::new(Vec::new());
         let results: Vec<(PathBuf, Option<String>)> = run(&|| {
             todo.par_iter()
                 .map(|p| {
                     let text = read_image(p, &langs)
-                        .map_err(|e| log(&format!("Could not read {}: {}", p.file_name().unwrap_or_default().to_string_lossy(), e)))
+                        .map_err(|e| {
+                            log(&format!("Could not read {}: {}", p.file_name().unwrap_or_default().to_string_lossy(), e));
+                            failed.lock().unwrap().push((p.clone(), e.to_string()));
+                        })
                         .ok();
                     progress(done.fetch_add(1, Ordering::Relaxed) + 1, total);
                     (p.clone(), text)
@@ -190,6 +194,12 @@ pub fn ocr_files_ex(paths: &[PathBuf], progress: Progress, log: Log, download: b
             }
         }
         save_cache(&cache);
+        // one Problems entry per batch, so the Activity page can say what went wrong and offer a fix
+        let failed = failed.into_inner().unwrap();
+        if let Some((first, err)) = failed.first() {
+            let what = if failed.len() == 1 { "1 picture".to_string() } else { format!("{} pictures", failed.len()) };
+            crate::activity::error(&format!("Couldn't read {what}: {}", err.trim()), Some(first));
+        }
     }
     out
 }

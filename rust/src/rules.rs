@@ -62,23 +62,71 @@ impl Rules {
 
     /// -> (category, matched keyword patterns strongest first, score)
     pub fn classify(&self, text: &str) -> (String, Vec<String>, f64) {
-        if text.trim().chars().count() < self.min_chars {
-            return (self.no_text.clone(), vec![], 0.0);
+        let v = self.verdict(text, true);
+        (v.cat, v.hits, v.score)
+    }
+
+    /// The full decision. `check_len`: very short text counts as "No Text".
+    pub fn verdict(&self, text: &str, check_len: bool) -> Verdict {
+        let mut v = Verdict { cat: self.fallback.clone(), hits: vec![], score: 0.0, runner_up: 0.0, min_score: 1.0 };
+        if check_len && text.trim().chars().count() < self.min_chars {
+            v.cat = self.no_text.clone();
+            return v;
         }
-        let (mut best, mut best_hits, mut best_score) = (self.fallback.clone(), vec![], 0.0);
         for c in &self.cats {
             let mut hits: Vec<(&str, f64)> =
                 c.keywords.iter().filter(|(rx, _, _)| rx.is_match(text)).map(|(_, p, w)| (p.as_str(), *w)).collect();
             let score: f64 = hits.iter().map(|h| h.1).sum();
-            if score >= c.min_score && score > best_score {
+            if score >= c.min_score && score > v.score {
                 hits.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap()); // stable: keeps order for equal weights
-                best = c.name.clone();
-                best_hits = hits.into_iter().map(|h| h.0.to_string()).collect();
-                best_score = score;
+                v.runner_up = v.runner_up.max(v.score);
+                v.cat = c.name.clone();
+                v.hits = hits.into_iter().map(|h| h.0.to_string()).collect();
+                v.score = score;
+                v.min_score = c.min_score;
+            } else {
+                v.runner_up = v.runner_up.max(score);
             }
         }
-        (best, best_hits, best_score)
+        v
     }
+}
+
+/// How a text was classified.
+pub struct Verdict {
+    pub cat: String,
+    pub hits: Vec<String>,
+    pub score: f64,
+    /// the best score any other category got
+    pub runner_up: f64,
+    pub min_score: f64,
+}
+
+impl Verdict {
+    /// "strong": clearly this category; "weak": only just, or a close call with another.
+    pub fn confidence(&self) -> &'static str {
+        if self.hits.is_empty() {
+            "none"
+        } else if self.score >= self.min_score * 2.0 && self.score - self.runner_up >= 1.0 {
+            "strong"
+        } else {
+            "weak"
+        }
+    }
+}
+
+/// The most frequent meaningful words in a text (for "why nothing matched").
+pub fn top_words(text: &str, n: usize) -> Vec<String> {
+    let mut counts: HashMap<String, usize> = HashMap::new();
+    for m in RX_WORD.find_iter(text) {
+        let w = m.as_str().to_lowercase();
+        if !STOP.contains(w.as_str()) {
+            *counts.entry(w).or_default() += 1;
+        }
+    }
+    let mut v: Vec<(String, usize)> = counts.into_iter().collect();
+    v.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+    v.into_iter().take(n).map(|x| x.0).collect()
 }
 
 pub fn load_json() -> Value {

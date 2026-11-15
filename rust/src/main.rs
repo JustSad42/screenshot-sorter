@@ -19,6 +19,7 @@ mod rules;
 mod settings;
 mod sorter;
 mod tools;
+mod trackers;
 mod updater;
 mod vision;
 
@@ -114,7 +115,7 @@ fn cli(args: &[String]) {
             .iter()
             .map(|(k, t)| {
                 let (c, hits, _) = rules.classify(t);
-                let item = sorter::Item { path: PathBuf::new(), category: c.clone(), hits, how: "text".into(), text: String::new() };
+                let item = sorter::Item { path: PathBuf::new(), category: c.clone(), hits, how: "text".into(), text: String::new(), ..Default::default() };
                 (k.clone(), serde_json::json!([c, item.reason()]))
             })
             .collect();

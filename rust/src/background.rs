@@ -400,8 +400,89 @@ impl Worker {
                     crate::updater::daily_check(notify.as_ref());
                 }
             }
+            self.maybe_summary(&s);
+            self.maybe_shrink(&s);
         }
         log_line("background.log", "Background sorting stopped");
+    }
+
+    /// Evening summary notification: once a day after 8 pm (Sundays only for weekly),
+    /// and only if something happened.
+    fn maybe_summary(&self, s: &settings::Settings) {
+        use chrono::{Datelike, Timelike};
+        let Some(notify) = &self.notify else { return };
+        let now = chrono::Local::now();
+        let weekly = s.summary == "weekly";
+        if s.summary == "off" || now.hour() < 20 || (weekly && now.weekday() != chrono::Weekday::Sun) {
+            return;
+        }
+        let today = now.format("%Y-%m-%d").to_string();
+        if read_state()["last_summary"].as_str() == Some(today.as_str()) {
+            return;
+        }
+        write_state("last_summary", json!(today));
+        let since = (now - chrono::Duration::days(if weekly { 7 } else { 1 })).format("%Y-%m-%dT%H:%M:%S").to_string();
+        let ev: Vec<Value> = activity::recent(50_000).into_iter().filter(|e| e["t"].as_str().map(|t| t >= since.as_str()).unwrap_or(false)).collect();
+        let count = |f: &dyn Fn(&Value) -> bool| ev.iter().filter(|e| f(e)).count();
+        let auto = count(&|e| e["kind"] == "move" && e["by"] == "auto");
+        let you = count(&|e| (e["kind"] == "move" || e["kind"] == "rename") && e["by"] == "you");
+        let weak = count(&|e| e["kind"] == "move" && e["by"] == "auto" && e["conf"] == "weak");
+        let errs = count(&|e| e["kind"] == "error");
+        if auto + you + errs == 0 {
+            return;
+        }
+        let mut parts = vec![format!("{auto} sorted automatically")];
+        if you > 0 {
+            parts.push(format!("{you} moved by you"));
+        }
+        if weak > 0 {
+            parts.push(format!("{weak} worth a second look"));
+        }
+        if errs > 0 {
+            parts.push(format!("{errs} problem{}", if errs == 1 { "" } else { "s" }));
+        }
+        notify(if weekly { "Your week in Screenshot Sorter" } else { "Today in Screenshot Sorter" }, &format!("{}. Open Review or Activity to see them.", parts.join(", ")));
+    }
+
+    /// Shrink screenshots older than the chosen age to AVIF, at most once an hour.
+    /// Files that didn't get smaller are remembered and not tried again.
+    fn maybe_shrink(&self, s: &settings::Settings) {
+        if s.auto_avif_days == 0 || now_secs() - read_state()["last_shrink"].as_f64().unwrap_or(0.0) < 3600.0 {
+            return;
+        }
+        write_state("last_shrink", json!(now_secs()));
+        let mut skip: std::collections::HashSet<String> =
+            read_state()["shrink_skip"].as_array().map(|a| a.iter().filter_map(Value::as_str).map(String::from).collect()).unwrap_or_default();
+        for (folder, _) in s.active_folders() {
+            let files: Vec<PathBuf> = crate::tools::old_enough(&folder, s.auto_avif_days, 5000)
+                .into_iter()
+                .filter(|p| !skip.contains(&crate::ocr::cache_key(p)))
+                .take(300)
+                .collect();
+            if files.is_empty() || self.stop.load(Ordering::Relaxed) {
+                continue;
+            }
+            let keys: Vec<(PathBuf, String)> = files.iter().map(|p| (p.clone(), crate::ocr::cache_key(p))).collect();
+            let n_files = files.len();
+            self.set_busy(&format!("Shrinking {n_files} older screenshot{} in {} to AVIF", if n_files == 1 { "" } else { "s" }, folder_name(&folder)));
+            let (n, before, after) =
+                crate::tools::compress_list(&folder, files, crate::tools::Mode::Avif, &|d, t| *self.prog.lock().unwrap() = (d, t), &|m| log_line("background.log", m));
+            self.set_busy("");
+            for (p, k) in keys {
+                if p.exists() {
+                    skip.insert(k); // still there = not converted (wouldn't get smaller, or couldn't open)
+                }
+            }
+            if n > 0 {
+                activity::info(&format!(
+                    "Shrank {n} older screenshot{} in {} to AVIF: {:.1} MB → {:.1} MB (originals kept in the backup folder)",
+                    if n == 1 { "" } else { "s" }, folder_name(&folder), before as f64 / 1e6, after as f64 / 1e6
+                ));
+            }
+        }
+        let mut list: Vec<String> = skip.into_iter().collect();
+        list.truncate(20_000);
+        write_state("shrink_skip", json!(list));
     }
 }
 

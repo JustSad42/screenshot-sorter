@@ -170,7 +170,7 @@ pub fn target_path(folder: &Path, p: &Path, category: &str, text: &str, s: &Sett
 
 // ---------- planning ----------
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Default)]
 pub struct Item {
     #[serde(rename = "p")]
     pub path: PathBuf,
@@ -182,12 +182,21 @@ pub struct Item {
     pub how: String,
     #[serde(skip)]
     pub text: String,
+    /// "strong" | "weak" | "none" (nothing matched) | "" (not judged, e.g. moved by you)
+    #[serde(skip)]
+    pub conf: String,
+    /// app or window name that helped (from the file name or the picture's own details)
+    #[serde(skip)]
+    pub app: String,
 }
 
 impl Item {
     pub fn reason(&self) -> String {
         if self.how == "text" {
             let mut seen = Vec::<String>::new();
+            if !self.app.is_empty() {
+                seen.push(format!("app: {}", self.app));
+            }
             for h in self.hits.iter().take(5) {
                 let w = rules::pretty_kw(h);
                 if !w.is_empty() && !seen.contains(&w) {
@@ -206,9 +215,114 @@ impl Item {
     pub fn to_json(&self) -> serde_json::Value {
         serde_json::json!({
             "p": self.path.to_string_lossy(), "n": self.path.file_name().unwrap_or_default().to_string_lossy(),
-            "c": self.category, "r": self.reason(), "t": self.text.chars().take(700).collect::<String>()
+            "c": self.category, "r": self.reason(), "t": self.text.chars().take(700).collect::<String>(), "conf": self.conf
         })
     }
+}
+
+// ---------- app hints: names that come with the picture ----------
+
+static GENERIC_NAME: Lazy<Regex> = Lazy::new(|| {
+    RegexBuilder::new(r"^(screenshot|screen ?shot|scr|img|image|photo|pic|capture|snip|clip|untitled|vlcsnap|dsc|pxl|wp|whatsapp image|signal|telegram|photo_)\b|^[\d\W_]+$")
+        .case_insensitive(true)
+        .build()
+        .unwrap()
+});
+static DATE_BITS: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\d{1,4}([ _\-.:]\d{1,4}){1,6}( ?[ap]m)?|\b\d+\b|\(\d+\)").unwrap());
+
+/// Text chunks inside a PNG (title, description, software...), read before the image data.
+fn png_text(p: &Path) -> String {
+    use std::io::{Read, Seek, SeekFrom};
+    let Ok(mut f) = std::fs::File::open(p) else { return String::new() };
+    let mut sig = [0u8; 8];
+    if f.read_exact(&mut sig).is_err() || &sig != b"\x89PNG\r\n\x1a\n" {
+        return String::new();
+    }
+    let mut out = Vec::new();
+    for _ in 0..64 {
+        let mut hd = [0u8; 8];
+        if f.read_exact(&mut hd).is_err() {
+            break;
+        }
+        let len = u32::from_be_bytes([hd[0], hd[1], hd[2], hd[3]]) as usize;
+        let kind = &hd[4..8];
+        if kind == b"IDAT" || kind == b"IEND" {
+            break;
+        }
+        if (kind == b"tEXt" || kind == b"iTXt") && len < 4096 {
+            let mut data = vec![0u8; len];
+            if f.read_exact(&mut data).is_err() {
+                break;
+            }
+            let _ = f.seek(SeekFrom::Current(4));
+            let mut parts = data.splitn(2, |b| *b == 0);
+            let key = String::from_utf8_lossy(parts.next().unwrap_or_default()).to_lowercase();
+            let mut val = parts.next().unwrap_or_default().to_vec();
+            if kind == b"iTXt" {
+                // compression flag, method, language\0, translated keyword\0, text
+                val = val.get(2..).unwrap_or_default().splitn(3, |b| *b == 0).nth(2).unwrap_or_default().to_vec();
+            }
+            if ["title", "description", "comment", "software", "source"].contains(&key.as_str()) {
+                out.push(String::from_utf8_lossy(&val).chars().take(200).collect::<String>());
+            }
+        } else if f.seek(SeekFrom::Current(len as i64 + 4)).is_err() {
+            break;
+        }
+    }
+    out.join(" ")
+}
+
+/// App or window name that comes with a picture: from file names like Game Bar's
+/// "League of Legends 11_14_2026 10_15_31 PM.png", and from text stored inside PNGs.
+pub fn app_hint(p: &Path) -> String {
+    if ocr::online_only(p) {
+        return String::new(); // reading it would download it
+    }
+    let name = p.file_name().unwrap_or_default().to_string_lossy().to_string();
+    let stem = p.file_stem().unwrap_or_default().to_string_lossy().to_string();
+    let mut parts = Vec::new();
+    if !RENAMED.is_match(&name) && !GENERIC_NAME.is_match(&stem) {
+        let spaced = stem.replace(['_', '.'], " ");
+        let cleaned = DATE_BITS.replace_all(&spaced, " ");
+        let cleaned = WS.replace_all(cleaned.trim_matches(|c: char| !c.is_alphanumeric()), " ").trim().to_string();
+        if cleaned.chars().filter(|c| c.is_alphabetic()).count() >= 3 {
+            parts.push(cleaned);
+        }
+    }
+    if p.extension().map(|e| e.eq_ignore_ascii_case("png")).unwrap_or(false) {
+        let t = png_text(p);
+        if !t.trim().is_empty() {
+            parts.push(t.trim().to_string());
+        }
+    }
+    parts.join(" · ")
+}
+
+/// Category, reason and confidence for one picture's text (plus app hint).
+pub fn judge(rules: &Rules, path: &Path, text: &str) -> Item {
+    let hint = app_hint(path);
+    let short = text.trim().chars().count() < rules.min_chars;
+    let combined = if hint.is_empty() { text.to_string() } else { format!("{text}\n{hint}") };
+    let mut v = rules.verdict(&combined, false);
+    if short && v.hits.is_empty() {
+        v = rules.verdict(text, true); // no text, and the name didn't help either
+    }
+    let mut it = Item { path: path.to_path_buf(), category: v.cat.clone(), hits: v.hits.clone(), how: "text".into(), text: text.to_string(), ..Default::default() };
+    if v.cat == rules.no_text {
+        it.how = "no readable text".into();
+        it.conf = "none".into();
+    } else if v.cat == rules.fallback {
+        let words = rules::top_words(text, 3);
+        it.how = if words.is_empty() { "no category keywords matched".into() } else { format!("no category keywords matched · top words: {}", words.join(", ")) };
+        it.conf = "none".into();
+    } else {
+        it.conf = v.confidence().into();
+        let helped = !hint.is_empty() && rules.cats.iter().find(|c| c.name == v.cat).map(|c| c.keywords.iter().any(|(rx, _, _)| rx.is_match(&hint))).unwrap_or(false);
+        if helped {
+            it.app = hint.chars().take(60).collect();
+        }
+    }
+    it
 }
 
 /// Text rules first, then (optionally) looks, then Claude.
@@ -224,11 +338,7 @@ pub fn classify_files_ex(files: &[PathBuf], folder: &Path, progress: Progress, l
     let s = settings::load();
     let mut items: Vec<Item> = files
         .iter()
-        .filter_map(|p| texts.get(p).map(|t| (p, t.clone())))
-        .map(|(p, t)| {
-            let (c, hits, _) = rules.classify(&t);
-            Item { path: p.clone(), category: c, hits, how: "text".into(), text: t }
-        })
+        .filter_map(|p| texts.get(p).map(|t| judge(&rules, p, t)))
         .collect();
 
     let left = |items: &Vec<Item>, r: &Rules| -> Vec<usize> {
@@ -242,6 +352,7 @@ pub fn classify_files_ex(files: &[PathBuf], folder: &Path, progress: Progress, l
             if let Some((cat, conf)) = guesses.get(&items[i].path) {
                 items[i].category = cat.clone();
                 items[i].how = format!("looks like {} ({:.0}% sure)", cat, conf * 100.0);
+                items[i].conf = if *conf >= 0.9 { "strong" } else { "weak" }.into();
             }
         }
     }
@@ -255,6 +366,7 @@ pub fn classify_files_ex(files: &[PathBuf], folder: &Path, progress: Progress, l
                         if a != &items[i].category {
                             items[i].category = a.clone();
                             items[i].how = "Claude".into();
+                            items[i].conf = "weak".into();
                         }
                     }
                 }
@@ -336,7 +448,8 @@ fn new_log() -> PathBuf {
 static MOVE_LOCK: Lazy<std::sync::Mutex<()>> = Lazy::new(|| std::sync::Mutex::new(()));
 
 /// A planned move: (from, to, category, why)
-pub type Planned = (PathBuf, PathBuf, String, String);
+/// A planned move: (from, to, category, why, confidence)
+pub type Planned = (PathBuf, PathBuf, String, String, String);
 
 /// Moves files, keeps the text cache in step, writes an undo log and the activity log.
 /// kind: "move" | "rename"; by: "auto" | "you". -> [(from, to)]
@@ -346,8 +459,8 @@ pub fn move_files(pairs: Vec<Planned>, kind: &str, by: &str) -> Vec<(PathBuf, Pa
     let batch = log_path.file_stem().unwrap_or_default().to_string_lossy().to_string();
     let mut cache = ocr::load_cache();
     let mut done = Vec::new();
-    let mut logged: Vec<(PathBuf, PathBuf, String, String)> = Vec::new();
-    for (src, dest, cat, why) in pairs {
+    let mut logged: Vec<Planned> = Vec::new();
+    for (src, dest, cat, why, conf) in pairs {
         if !src.exists() || src == dest {
             continue;
         }
@@ -356,14 +469,14 @@ pub fn move_files(pairs: Vec<Planned>, kind: &str, by: &str) -> Vec<(PathBuf, Pa
         match move_file(&src, &dest) {
             Ok(()) => {
                 ocr::carry(&mut cache, &old_key, &dest);
-                logged.push((src.clone(), dest.clone(), cat, why));
+                logged.push((src.clone(), dest.clone(), cat, why, conf));
                 done.push((src, dest));
             }
             Err(e) => crate::activity::error(&format!("Couldn't move {}: {e}", src.file_name().unwrap_or_default().to_string_lossy()), Some(&src)),
         }
     }
     let items: Vec<crate::activity::Moved> =
-        logged.iter().map(|(f, t, c, w)| crate::activity::Moved { from: f, to: t, category: c, why: w }).collect();
+        logged.iter().map(|(f, t, c, w, k)| crate::activity::Moved { from: f, to: t, category: c, why: w, conf: k }).collect();
     crate::activity::moved(kind, by, &batch, &items);
     if !done.is_empty() {
         if let Ok(mut w) = csv::Writer::from_path(&log_path) {
@@ -383,7 +496,7 @@ pub fn apply_plan(folder: &Path, plan: &[Item], by: &str) -> Vec<(PathBuf, PathB
     let s = settings::load();
     move_files(
         plan.iter()
-            .map(|it| (it.path.clone(), target_path(folder, &it.path, &it.category, &it.text, &s), it.category.clone(), it.reason()))
+            .map(|it| (it.path.clone(), target_path(folder, &it.path, &it.category, &it.text, &s), it.category.clone(), it.reason(), it.conf.clone()))
             .collect(),
         "move",
         by,
@@ -400,7 +513,7 @@ pub fn move_to_category(folder: &Path, paths: &[PathBuf], category: &str) -> Vec
             .map(|p| {
                 let t = cache.get(&ocr::cache_key(p)).cloned().unwrap_or_default();
                 let root = settings::root_of(p).unwrap_or_else(|| folder.to_path_buf());
-                (p.clone(), target_path(&root, p, category, &t, &s), category.to_string(), "moved by you".to_string())
+                (p.clone(), target_path(&root, p, category, &t, &s), category.to_string(), "moved by you".to_string(), String::new())
             })
             .collect(),
         "move",
@@ -427,7 +540,7 @@ pub fn rename_existing(folder: &Path, progress: Progress, log: Log) -> Vec<(Path
             continue;
         }
         let t = texts.get(p).cloned().unwrap_or_default();
-        pairs.push((p.clone(), p.with_file_name(readable_name(p, &cat, &t, &s)), cat, "readable name".to_string()));
+        pairs.push((p.clone(), p.with_file_name(readable_name(p, &cat, &t, &s)), cat, "readable name".to_string(), String::new()));
     }
     move_files(pairs, "rename", "you")
 }
@@ -451,7 +564,7 @@ pub fn undo_one(from: &Path, to: &Path) -> Result<(), String> {
             let _ = std::fs::remove_dir(d);
         }
     }
-    crate::activity::moved("undo", "you", "", &[crate::activity::Moved { from: to, to: from, category: "", why: "undone" }]);
+    crate::activity::moved("undo", "you", "", &[crate::activity::Moved { from: to, to: from, category: "", why: "undone", conf: "" }]);
     crate::background::skip(&[from.to_path_buf()]);
     Ok(())
 }
@@ -471,6 +584,29 @@ pub fn undo_last() -> (usize, bool) {
         .unwrap_or_default();
     logs.sort();
     let Some(log_path) = logs.pop() else { return (0, false) };
+    (undo_log(&log_path), true)
+}
+
+/// Undo one whole sort (a batch on the Activity page). -> files moved back
+pub fn undo_batch(batch: &str) -> Result<usize, String> {
+    if batch.is_empty() || batch.contains(['/', '\\', '.']) {
+        return Err("Unknown batch".into());
+    }
+    let p = settings::log_dir().join(format!("{batch}.csv"));
+    if !p.exists() {
+        return Err(if p.with_extension("undone").exists() { "That sort was already undone.".into() } else { "Its undo log is gone.".into() });
+    }
+    Ok(undo_log(&p))
+}
+
+/// Undo batches already undone, for the Activity page.
+pub fn undone_batches() -> Vec<String> {
+    std::fs::read_dir(settings::log_dir())
+        .map(|rd| rd.flatten().filter_map(|e| e.file_name().to_str().and_then(|n| n.strip_suffix(".undone")).map(String::from)).collect())
+        .unwrap_or_default()
+}
+
+fn undo_log(log_path: &Path) -> usize {
     let mut rows = Vec::new();
     if let Ok(mut r) = csv::Reader::from_path(&log_path) {
         for rec in r.records().flatten() {
@@ -495,7 +631,7 @@ pub fn undo_last() -> (usize, bool) {
     }
     ocr::save_cache(&cache);
     let items: Vec<crate::activity::Moved> =
-        back.iter().map(|(a, b)| crate::activity::Moved { from: a, to: b, category: "", why: "undone" }).collect();
+        back.iter().map(|(a, b)| crate::activity::Moved { from: a, to: b, category: "", why: "undone", conf: "" }).collect();
     crate::activity::moved("undo", "you", "", &items);
     crate::background::skip(&back.iter().map(|(_, b)| b.clone()).collect::<Vec<_>>());
     let mut dirs: Vec<PathBuf> = rows.iter().filter_map(|(_, to)| to.parent().map(Path::to_path_buf)).collect();
@@ -508,8 +644,8 @@ pub fn undo_last() -> (usize, bool) {
             }
         }
     }
-    let _ = std::fs::rename(&log_path, log_path.with_extension("undone"));
-    (moved, true)
+    let _ = std::fs::rename(log_path, log_path.with_extension("undone"));
+    moved
 }
 
 /// Images under folder whose text contains query -> [(path, snippet)]
