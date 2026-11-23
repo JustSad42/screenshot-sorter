@@ -7,6 +7,8 @@ without text are matched by how they look, and Claude can optionally handle any 
 Written in Rust with [Tauri](https://tauri.app). It starts in about a tenth of a second and uses
 10-15 MB in the background.
 
+![Sort preview: each new screenshot with the category it would go to and the words that decided it](docs/screenshots/sort-preview.png)
+
 ## Install
 
 Download `ScreenshotSorter-x.y.z-setup.exe` from the
@@ -22,6 +24,15 @@ to itself. The portable copy tells you about updates but doesn't install them.
 
 Needs Windows 10 (1809) or 11 with WebView2, which Windows 11 already has. To open AVIF and
 JPEG XL screenshots, install the free AV1 and JPEG XL extensions from the Microsoft Store.
+
+## How it works
+
+| | |
+|---|---|
+| ![The Sort page before a preview](docs/screenshots/start.png) | ![The sort preview filtered to one category](docs/screenshots/sort-filter.png) |
+| **1. Press Preview.** It reads the text in every new screenshot. Nothing moves yet. | **2. Check the plan.** Each card shows its category and the words that decided it. Drag a card onto a chip to change it, then **Sort now**. |
+| ![The Activity page with watched folders and recent moves](docs/screenshots/activity.png) | ![The Library grouped by category](docs/screenshots/library.png) |
+| **3. Or let auto-sort do it.** Watched folders sort instantly or on a timer; Activity lists every move with Undo. | **4. Browse and search the Library.** Everything by category or as a timeline, and search finds the text inside any screenshot. |
 
 ## What it does
 

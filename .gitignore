@@ -7,5 +7,6 @@
 !/release.ps1
 !/installer/
 !/rust/
+!/docs/
 /rust/target/
 /rust/gen/
