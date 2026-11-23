@@ -255,7 +255,7 @@ fn shell_thumbnail(p: &Path, size: u32) -> Option<image::RgbImage> {
             let lines = GetDIBits(dc, hbm, 0, h as u32, Some(px.as_mut_ptr() as *mut _), &mut bi, DIB_RGB_COLORS);
             ReleaseDC(None, dc);
             if lines > 0 {
-                let rgb: Vec<u8> = px.chunks_exact(4).flat_map(|c| [c[2], c[1], c[0]]).collect();
+                let rgb: Vec<u8> = px.as_chunks::<4>().0.iter().flat_map(|c| [c[2], c[1], c[0]]).collect();
                 out = image::RgbImage::from_raw(w as u32, h as u32, rgb);
             }
         }

@@ -146,7 +146,7 @@ pub fn safe_name(s: &str, limit: usize) -> String {
     let s = WS.replace_all(&s, " ");
     let s = s.trim_matches(|c| c == ' ' || c == '.');
     let cut: String = s.chars().take(limit).collect();
-    cut.trim_end_matches(|c| c == ' ' || c == '.').to_string()
+    cut.trim_end_matches([' ', '.']).to_string()
 }
 
 fn readable_name(p: &Path, category: &str, text: &str, s: &Settings) -> String {
@@ -671,7 +671,7 @@ pub fn undone_batches() -> Vec<String> {
 
 fn undo_log(log_path: &Path) -> usize {
     let mut rows = Vec::new();
-    if let Ok(mut r) = csv::Reader::from_path(&log_path) {
+    if let Ok(mut r) = csv::Reader::from_path(log_path) {
         for rec in r.records().flatten() {
             if rec.len() >= 2 {
                 rows.push((PathBuf::from(&rec[0]), PathBuf::from(&rec[1])));

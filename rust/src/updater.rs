@@ -155,11 +155,11 @@ pub fn install(log: &dyn Fn(&str)) -> Result<String, String> {
         .call()
         .map_err(|e| format!("Download failed: {e}"))?;
     let bytes = resp.body_mut().with_config().limit(300 * 1024 * 1024).read_to_vec().map_err(|e| format!("Download failed: {e}"))?;
-    if let Some(want) = &r.setup_sha256 {
-        let got: String = Sha256::digest(&bytes).iter().map(|b| format!("{b:02x}")).collect();
-        if &got != want {
-            return Err("The download didn't match GitHub's checksum, so it wasn't installed.".into());
-        }
+    // Never run an installer we couldn't verify.
+    let want = r.setup_sha256.as_ref().ok_or("That release has no checksum, so it wasn't installed.")?;
+    let got: String = Sha256::digest(&bytes).iter().map(|b| format!("{b:02x}")).collect();
+    if &got != want {
+        return Err("The download didn't match GitHub's checksum, so it wasn't installed.".into());
     }
     let dir = std::env::temp_dir().join("ScreenshotSorterUpdate");
     let _ = std::fs::create_dir_all(&dir);

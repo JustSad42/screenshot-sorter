@@ -606,7 +606,7 @@ fn dispatch(method: &str, a: &[Value]) -> Result<Value, String> {
             json!(n)
         }
         "add_folder" => match rfd::FileDialog::new().set_directory(folder()).pick_folder() {
-            Some(p) => set_folder_mode(&p.to_string_lossy(), a.get(0).and_then(Value::as_str).unwrap_or("instant"))?,
+            Some(p) => set_folder_mode(&p.to_string_lossy(), a.first().and_then(Value::as_str).unwrap_or("instant"))?,
             None => Value::Null,
         },
         "set_folder_mode" => set_folder_mode(&s_arg(a, 0), &s_arg(a, 1))?,
@@ -841,7 +841,7 @@ pub fn open_window(app: &AppHandle, preview: bool) {
         let _ = w.show();
         let _ = w.set_focus();
         let f = serde_json::to_string(&folder().to_string_lossy()).unwrap_or_default();
-        let _ = w.eval(&format!("window.__switchFolder && window.__switchFolder({f}, {preview})"));
+        let _ = w.eval(format!("window.__switchFolder && window.__switchFolder({f}, {preview})"));
         return;
     }
     let mut b = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
