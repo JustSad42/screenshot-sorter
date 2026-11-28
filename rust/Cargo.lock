@@ -66,6 +66,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
+name = "app-update"
+version = "1.0.0"
+source = "git+https://github.com/JustSad42/app-update?tag=v1.0.0#d8ee8bec6b06528490fc7aa3cf90865281c2b97d"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "ureq",
+]
+
+[[package]]
 name = "arbitrary"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3902,8 +3912,9 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "screenshot-sorter"
-version = "2.3.1"
+version = "2.3.2"
 dependencies = [
+ "app-update",
  "base64 0.22.1",
  "chrono",
  "csv",
@@ -3921,7 +3932,6 @@ dependencies = [
  "rfd",
  "serde",
  "serde_json",
- "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-single-instance",
