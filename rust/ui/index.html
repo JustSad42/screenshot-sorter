@@ -511,6 +511,12 @@ const AUTO = window.__AUTO;  // set by the app when opened from the Explorer men
 const $ = (s, el=document) => el.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const img = (p, s=420) => `http://thumb.localhost/?s=${s}&p=${encodeURIComponent(p)}`;
+// Thumbnails (`data-thumb`): one listener each, because the page's rules forbid inline handlers.
+for (const type of ['load', 'error']) document.addEventListener(type, e => {
+  if (!e.target.hasAttribute?.('data-thumb')) return;
+  if (type === 'load') e.target.classList.add('ld');
+  e.target.parentNode.classList.add('done', ...(type === 'error' ? ['bad'] : []));
+}, true);
 const ICONS = {
   sort:'<path d="M3 6h18M6 12h12M10 18h4"/>',
   library:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
@@ -901,7 +907,7 @@ function visible(){
 }
 function cardHtml(it, i){
   return `<div class="card ${S.sel.has(it.p)?'sel':''}" draggable="true" data-i="${i}">
-      <div class="thumb"><img loading="lazy" decoding="async" src="${img(it.p, 480)}" onload="this.classList.add('ld');this.parentNode.classList.add('done')" onerror="this.parentNode.classList.add('done','bad')">
+      <div class="thumb"><img loading="lazy" decoding="async" src="${img(it.p, 480)}" data-thumb>
         <div class="ph">${it.cloud ? `${icon('cloud')}Online-only in OneDrive<br>no preview yet` : `${icon('imageoff')}Can't show this picture`}</div>
         ${it.cloud ? `<span class="cloudtag" title="Online-only in OneDrive: not downloaded to this PC">${icon('cloud')}</span>` : ''}
         <span class="tag"><i style="background:${color(it.c)}"></i>${esc(it.c)}</span><span class="check"></span>
